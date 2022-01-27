@@ -3,7 +3,14 @@ pub mod ops {
     pub enum Operator {
         //Core operators: push and pop onto / off of stack
         PUSH(u32),
+        // LOAD only gets the first word (4bytes) of the allocation
+        // this means it is only suitable for small allocations
+        // use LOADD for larger allocations
         LOAD(usize),
+
+        // LOADD (load dynamic) gets the whole allocation, most significant bytes on top. topmost
+        // value on stack after this call will be the size of the allocation below
+        LOADD(usize),
 
         CONST_U(usize, u32),
         CONST_F(usize, f32),
@@ -68,6 +75,7 @@ pub mod ops {
         LABEL(String),
 
         SYSCALL(usize,usize), //system call. left op is syscall id, right op is number of args
+        SYSCALLD(usize), //system call. op is syscall id. pop top value off stack, reads as u32. then pops that many off stack as args
 
 
         EXCEPT_THROW, //throw exception

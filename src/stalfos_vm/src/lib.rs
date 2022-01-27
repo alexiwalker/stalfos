@@ -158,6 +158,8 @@ pub mod stalfos {
 
 
         pub(crate) fn syscall(syscall_id: usize, mut args: Vec<u32>) -> bool {
+
+            //if you do not have arguments and the syscall requires an argument, a 1 represents false
             if args.is_empty() {
                 args.push(1)
             }
@@ -169,10 +171,11 @@ pub mod stalfos {
                     println!("{}", args[0]);
                 }
                 2 => {
+                    println!("VM ended with exit code {}", args[0]);
                     return false
                 }
                 _ => {
-                    println!("Unknown syscall");
+                    println!("Unknown syscall: {}", syscall_id);
                 }
             }
 

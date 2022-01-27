@@ -11,11 +11,23 @@ pub mod op_calls {
             Operator::PUSH(v) => {
                 vm.stack.push(*v);
             }
+            // LOAD only gets the first word (4bytes) of the allocation
+            // this means it is only suitable for small allocations
+            // use LOADD for larger allocations
             Operator::LOAD(ptr) => {
                 let v = vm.alloc_table[&ptr];
                 let (stack_location, _) = v;
                 let val = vm.memory[stack_location];
                 vm.stack.push(val);
+            }
+            Operator::LOADD(ptr) => {
+                let v = vm.alloc_table[&ptr];
+                let (stack_location, size) = v;
+                let size = size as usize;
+                for i in (size-1)..=0 {
+                    vm.stack.push(vm.memory[stack_location + i ]);
+                }
+                vm.stack.push(size as u32);
             }
             Operator::CONST_U(identifier, value_to_store) => {
                 let size = 1;
@@ -545,6 +557,17 @@ pub mod op_calls {
                 }
 
 
+            }
+            Operator::SYSCALLD(syscall_id) => {
+                let n_args = vm.stack.pop().unwrap();
+                let mut args = Vec::new();
+                for _ in 0..n_args {
+                    args.push(vm.stack.pop().unwrap());
+                }
+                args.reverse();
+                let program_continue = VM::syscall(*syscall_id, args);
+
+                vm.signal_finished = !program_continue;
             }
         }
 
