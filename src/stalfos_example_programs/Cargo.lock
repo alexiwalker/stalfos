@@ -3,14 +3,6 @@
 version = 3
 
 [[package]]
-name = "stalfos"
-version = "0.1.0"
-dependencies = [
- "stalfos_example_programs",
- "stalfos_vm",
-]
-
-[[package]]
 name = "stalfos_example_programs"
 version = "0.1.0"
 dependencies = [
