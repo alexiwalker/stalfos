@@ -1,0 +1,186 @@
+extern crate core;
+
+pub mod ops;
+mod op_calls;
+
+pub mod stalfos {
+    use std::borrow::{BorrowMut};
+    use std::collections::{BTreeMap, HashMap};
+    use crate::op_calls;
+    pub use crate::ops::ops as ops;
+    use crate::ops::ops::Operator;
+
+    pub struct VM {
+        pub stack: Vec<u32>,
+        pub program_counter: usize,
+        pub memory: Vec<u32>,
+        pub program: Vec<ops::Operator>,
+
+        //<preset pointer, (location, size)>
+        pub alloc_table: BTreeMap<usize, (usize, u32)>,
+        pub jmp_table: HashMap<String, usize>,
+        pub stack_frame_pointers: Vec<(usize,usize)>,
+
+
+        pub signal_finished: bool,
+        pub signal_debug: bool,
+
+    }
+
+    impl VM {
+        pub fn new() -> VM {
+            VM {
+                stack: vec![],
+                memory: vec![],
+                jmp_table: HashMap::new(),
+                stack_frame_pointers: vec![],
+
+                //dict that maps a preset value to a memory address
+                alloc_table: BTreeMap::new(),
+                program: vec![],
+                program_counter: 0,
+                signal_finished: false,
+                signal_debug: false,
+            }
+        }
+
+        pub fn new_debug() -> VM {
+            VM {
+                stack: vec![],
+                memory: vec![],
+                jmp_table: HashMap::new(),
+                stack_frame_pointers: vec![],
+
+                //dict that maps a preset value to a memory address
+                alloc_table: BTreeMap::new(),
+                program: vec![],
+                program_counter: 0,
+                signal_finished: false,
+                signal_debug: true,
+            }
+        }
+
+        pub fn execute_program(&mut self, program: Vec<ops::Operator>) -> &mut VM {
+            self.add_ops(program).prepare().run()
+        }
+
+        pub fn run(&mut self)-> &mut VM {
+
+            loop {
+                if !op_calls::op_calls::execute_operation(self){
+                    self.program_counter+=1;
+                }
+
+                if self.signal_debug {
+                    println!("{}", self.program_counter);
+                }
+
+                if self.signal_finished {
+                    break;
+                }
+            }
+
+            return self;
+
+        }
+
+        pub fn add_op(&mut self, op: ops::Operator)-> &mut VM {
+            self.program.push(op);
+            return self;
+        }
+
+        pub fn add_ops(&mut self, ops: Vec<ops::Operator>) -> &mut VM {
+            self.program.extend(ops);
+            return self;
+        }
+
+        fn process_jump_definitions(&mut self) -> () {
+            for op in self.program.iter_mut() {
+                match op {
+                    Operator::JMP_DEF(key, pointer) => {
+                        self.jmp_table.insert(key.to_string(), *pointer);
+                    }
+                    _ => return,
+                }
+            }
+            return
+        }
+
+        /**
+         * Sets up jump table, finds main and sets the program counter to it
+         * @param preset_value
+         * @param location
+         * @param size
+         */
+        pub fn prepare(&mut self)-> &mut VM {
+            self.process_jump_definitions();
+            self.program_counter = 0;
+
+            if self.jmp_table.contains_key("main") {
+                self.program_counter = self.jmp_table["main"];
+                self.stack_frame_pointers.push((0,self.program_counter))
+            } else {
+                panic!("No main function found");
+            }
+
+            return self;
+        }
+
+
+        pub(crate) fn syscall(syscall_id: usize, args: Vec<u32>) -> bool {
+            match syscall_id {
+                0 => {
+                    panic!("{}", args[0]);
+                }
+                1 => {
+                    println!("{}", args[0]);
+                }
+                2 => {
+                    return false
+                }
+                _ => {
+                    println!("Unknown syscall");
+                }
+            }
+
+            return true;
+        }
+
+        pub fn allocate(&mut self, ptr: &mut usize, size: &mut u32) -> usize {
+        // fn _alloc(vm: &mut VM, ptr: &mut usize, size: &mut u32) -> usize {
+                let table = self.alloc_table.borrow_mut();
+
+                //get all keys as a vector
+                let keys: Vec<usize> = table.keys().map(|x| *x).collect();
+                let l = keys.len();
+                for x in 0..l {
+
+                    // if the current key is not the final one in the allocations, check if the required size fits between current+len and next
+                    if x < l {
+                        let sptr = keys.get(x).unwrap();
+                        let next = keys.get(x + 1).unwrap();
+                        let v = self.alloc_table[&sptr];
+                        let (stack_location, s) = v;
+                        let (next_stack_location, _) = self.alloc_table[&next];
+                        if stack_location + s as usize + (*size as usize) < next_stack_location {
+                            let allocation = (stack_location, s + *size);
+                            let p = *ptr;
+                            self.alloc_table.insert(p, allocation);
+                            return p;
+                        }
+                    }
+                }
+
+
+                let p = self.memory.len();
+                let allocation = (p, *size);
+                 self.alloc_table.insert(*ptr, allocation);
+                for _ in 0..*size {
+                    self.memory.push(0);
+                }
+
+                return p;
+            // }
+        }
+    }
+}
