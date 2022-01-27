@@ -32,3 +32,19 @@ currently, no memory is deallocated during this unwinding. This is a future TODO
 RET returns from the current jumped reference. This sets the program counter to the location it was originally jumped from. resuming execution on the instruction after the JMP, JMPe,JMPne,JMPs.
  
  Currently, no allocations are removed during this process. I am unsure if I will implemented this functionality. In normal execution, consider calling DEALLOC(ptr_id) on any allocations that do not outlive the 'function'
+ 
+ 
+ ## sys calls
+ 
+ syscalls are executed by providing 2 numbers to the SYSCALL operator. the first is the syscall id, the second is the number of arguments.
+ 
+ sofar, the system call IDs are :
+ 
+ 0: causes a panic!. Accepts 1 arg. The value passed will be formatted into the PANIC message
+ 
+ 1: prints an arg. Accepts 1 arg. todo: accept multiple args, format them as string
+ 
+ 2: triggers the program to terminate after the next instruction with no specific exit code.
+ 
+ unknown syscalls will simply print "Unknown syscall". The number of arguments passed will still be popped off the stack and discarded.
+ 
