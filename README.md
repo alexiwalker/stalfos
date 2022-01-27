@@ -1,5 +1,7 @@
 # stalfos
-A toy stack based VM written in rust
+A toy stack based VM written in rust.
+
+Why is it called stalfos? I was watching someone play legend of zelda at the time. There was a stalfos on screen while I created the project.
 
 ### Architecture
 
