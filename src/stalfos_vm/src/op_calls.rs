@@ -156,22 +156,30 @@ pub mod op_calls {
             Operator::ADDi => {
                 let a = u_to_i(vm.stack.pop().unwrap());
                 let b = u_to_i(vm.stack.pop().unwrap());
-                vm.stack.push(i_to_u(a + b));
+                let (v, o) = i32::overflowing_add(a, b);
+                vm.stack.push(i_to_u(v));
+                vm.signal_overflow = o;
             }
             Operator::SUBi => {
                 let a = u_to_i(vm.stack.pop().unwrap());
                 let b = u_to_i(vm.stack.pop().unwrap());
-                vm.stack.push(i_to_u(a - b));
+                let (v, o) = i32::overflowing_sub(a, b);
+                vm.stack.push(i_to_u(v));
+                vm.signal_overflow = o;
             }
             Operator::MULi => {
                 let a = u_to_i(vm.stack.pop().unwrap());
                 let b = u_to_i(vm.stack.pop().unwrap());
-                vm.stack.push(i_to_u(a * b));
+                let (v, o) = i32::overflowing_mul(a, b);
+                vm.stack.push(i_to_u(v));
+                vm.signal_overflow = o;
             }
             Operator::DIVi => {
                 let a = u_to_i(vm.stack.pop().unwrap());
                 let b = u_to_i(vm.stack.pop().unwrap());
-                vm.stack.push(i_to_u(a / b));
+                let (v, o) = i32::overflowing_div(a, b);
+                vm.stack.push(i_to_u(v));
+                vm.signal_overflow = o;
             }
             Operator::MODi => {
                 let a = u_to_i(vm.stack.pop().unwrap());
@@ -457,47 +465,89 @@ pub mod op_calls {
             }
             Operator::JMP_SCAN => {
                 //noop, this is run during prepare()
+            }
+            Operator::ROR => {
+                let v = vm.stack.pop().unwrap();
+                let v = v.rotate_right(1);
+                vm.stack.push(v);
+            }
+            Operator::ROL => {
+                let v = vm.stack.pop().unwrap();
+                let v = v.rotate_left(1);
+                vm.stack.push(v);
+            }
+            Operator::LSR => {
+                let v = vm.stack.pop().unwrap();
+                let v = v >> 1;
+                vm.stack.push(v);
+            }
+            Operator::ASR => {
+                let v = vm.stack.pop().unwrap();
+                let v = ((v as i32) >> 1) as u32;
+                vm.stack.push(v);
+            }
+            Operator::LSL => {
+                let v = vm.stack.pop().unwrap();
+                let v = v << 1;
+                vm.stack.push(v);
+            }
+            Operator::ASL => {
+                let v = vm.stack.pop().unwrap();
+                let v = ((v as i32) << 1) as u32;
+                vm.stack.push(v);
+            }
+            Operator::ADDu => {
+                let v1 = vm.stack.pop().unwrap();
+                let v2 = vm.stack.pop().unwrap();
+                let (v, o) = u32::overflowing_add(v1, v2);
+                vm.stack.push(v);
+                vm.signal_overflow = o
+            }
+            Operator::SUBu => {
+                let v1 = vm.stack.pop().unwrap();
+                let v2 = vm.stack.pop().unwrap();
+                let (v, o) = u32::overflowing_sub(v1, v2);
+                vm.stack.push(v);
+                vm.signal_overflow = o
+            }
+            Operator::MULu => {
+                let v1 = vm.stack.pop().unwrap();
+                let v2 = vm.stack.pop().unwrap();
+                let (v, o) = u32::overflowing_mul(v1, v2);
+                vm.stack.push(v);
+                vm.signal_overflow = o
+            }
+            Operator::DIVu => {
+                let v1 = vm.stack.pop().unwrap();
+                let v2 = vm.stack.pop().unwrap();
+                let (v, o) = u32::overflowing_div(v1, v2);
+                vm.stack.push(v);
+                vm.signal_overflow = o
+            }
+            Operator::MODu => {
+                let v1 = vm.stack.pop().unwrap();
+                let v2 = vm.stack.pop().unwrap();
+                vm.stack.push(v1%v2);
+            }
+            Operator::JMPo(location) => {
+
+                if vm.signal_overflow {
+                    let ptr = vm.jmp_table.get(location).unwrap();
+                    let before = vm.program_counter;
+
+                    vm.program_counter = *ptr;
+
+                    has_changed_ptr = true;
+                    vm.stack_frame_pointers.push((before, vm.program_counter));
+                }
+
+                vm.signal_overflow=false
 
             }
         }
 
         has_changed_ptr
     }
-
-    // fn _alloc(vm: &mut VM, ptr: &mut usize, size: &mut u32) -> usize {
-    //     let table = vm.alloc_table.borrow_mut();
-    //
-    //     //get all keys as a vector
-    //     let keys: Vec<usize> = table.keys().map(|x| *x).collect();
-    //     let l = keys.len();
-    //     for x in 0..l {
-    //
-    //         // if the current key is not the final one in the allocations, check if the required size fits between current+len and next
-    //         if x < l {
-    //             let sptr = keys.get(x).unwrap();
-    //             let next = keys.get(x + 1).unwrap();
-    //             let v = vm.alloc_table[&sptr];
-    //             let (stack_location, s) = v;
-    //             let (next_stack_location, _) = vm.alloc_table[&next];
-    //             if stack_location + s as usize + (*size as usize) < next_stack_location {
-    //                 let allocation = (stack_location, s + *size);
-    //                 let p = *ptr;
-    //                 vm.alloc_table.insert(p, allocation);
-    //                 return p;
-    //             }
-    //         }
-    //     }
-    //
-    //
-    //     let p = vm.memory.len();
-    //     let allocation = (p, *size);
-    //     vm.alloc_table.insert(*ptr, allocation);
-    //     for _ in 0..*size {
-    //         vm.memory.push(0);
-    //     }
-    //
-    //     return p;
-    // }
 
 
     fn f_to_bytes(f: f32) -> [u8; 4] {

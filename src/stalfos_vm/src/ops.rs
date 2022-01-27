@@ -27,11 +27,18 @@ pub mod ops {
 
 
         //i = int, f= float, fi = float<op>int, if = int<op>float
-        ADDi,        ADDfi,        ADDif,        ADDf,
-        SUBi,        SUBfi,        SUBif,        SUBf,
-        MULi,        MULfi,        MULif,        MULf,
-        DIVi,        DIVfi,        DIVif,        DIVf,
-        MODi,        MODfi,        MODif,        MODf,
+        ADDu,     ADDi,        ADDfi,        ADDif,        ADDf,
+        SUBu,     SUBi,        SUBfi,        SUBif,        SUBf,
+        MULu,     MULi,        MULfi,        MULif,        MULf,
+        DIVu,     DIVi,        DIVfi,        DIVif,        DIVf,
+        MODu,     MODi,        MODfi,        MODif,        MODf,
+
+        ROR,
+        ROL,
+        LSR,
+        ASR,
+        LSL,
+        ASL,
 
         //bitwise ops
         NEG,
@@ -44,6 +51,7 @@ pub mod ops {
         CMP,
         JMP_SCAN, // scans through the program for all LABELS and adds them (and their addresses) to the jmp_label map. may be slow on large programs
         JMP(String),
+        JMPo(String), //jmp if overflow
         //compare all bits. (lop,rop)-> *u32 lop - *u32 rop == 0. cast to uint, sub, compare to 0
         JMPe(String),
         //jump if cmp bit is 1
