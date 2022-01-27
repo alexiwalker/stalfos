@@ -1,5 +1,5 @@
 # stalfos
-A toy stack based VM written in rust.
+A toy stack-based VM written in rust.
 
 Why is it called stalfos? I was watching someone play legend of zelda at the time. There was a stalfos on screen while I created the project.
 
@@ -15,9 +15,9 @@ individual bytes can be addressed by providing a pointer label and a number of b
  
 
 
-All jumps must be predefined with a JMP_DEF(string,address) before any other instructions. jmp instructions that point to an undefined label will panic.
+All jumps must be predefined with a JMP_DEF(string,address) before any other instructions. jmp instructions that point to an undefined label will panic. Alternatively, JMP_SCAN will located all labels and load them into the jump table at their current address. This may be slow/less efficient, especially on larger programs. But hardcoding the correct addresses in JMP_DEF will get difficult to maintain with larger programs.
 
-labels are technically a nop at runtime, but are used to signify the start of a new function. providing a JMP_DEF label but not having that label appear at that location is fine.  The jump will occur to the listed location anway ( ie, JMP_DEF(<invalid>,999) -> JMP(<invalid>) will move the program to address 999, even if LABEL(<invalid>) does not occur at location 999. This is because labels are noops at runtime and simple serve as an empty address to start the execution at.
+labels are technically a nop at runtime, but are used to signify the start of a new function. providing a JMP_DEF label but not having that label appear at that location is not invalid.  The jump will occur to the listed location anway ( ie, JMP_DEF(<invalid>,999) -> JMP(<invalid>) will move the program to address 999, even if LABEL(<invalid>) does not occur at location 999. 
 
 
 ## Exception
