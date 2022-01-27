@@ -20,7 +20,6 @@ pub mod op_calls {
                 let size = 1;
                 let mut allocated_memory_location = 0;
                 {
-
                     let mut _s = false;
                     let table = vm.alloc_table.borrow_mut();
 
@@ -57,7 +56,6 @@ pub mod op_calls {
 
                         allocated_memory_location = end_of_stack
                     }
-
                 }
                 vm.memory[allocated_memory_location] = *value_to_store;
             }
@@ -67,13 +65,11 @@ pub mod op_calls {
                 vm.memory.push(v as u32);
             }
             Operator::CONST_I(ptr, v) => {
-
                 let v = *v as u32;
                 vm.alloc_table.insert(*ptr, (vm.memory.len(), v));
                 vm.memory.push(v);
             }
             Operator::CONST_B(ptr, v) => {
-
                 let val = if *v { 1 } else { 0 };
                 vm.alloc_table.insert(*ptr, (vm.memory.len(), val));
                 vm.memory.push(val);
@@ -320,7 +316,7 @@ pub mod op_calls {
                             vm.program_counter = *after;
 
                             if vm.signal_debug {
-                                println!("CATCH FOUND: {},{}",before, catch_location);
+                                println!("CATCH FOUND: {},{}", before, catch_location);
                             }
                             //jump to catch
                             break;
@@ -458,6 +454,10 @@ pub mod op_calls {
                 let (stack_location, _size) = v;
                 let loc = (*stack_location) + (*offset);
                 vm.memory[loc] = *value;
+            }
+            Operator::JMP_SCAN => {
+                //noop, this is run during prepare()
+
             }
         }
 

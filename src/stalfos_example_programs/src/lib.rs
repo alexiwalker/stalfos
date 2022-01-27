@@ -3,9 +3,11 @@ pub mod example_programs {
 
     pub fn default_example_program() -> Vec<Operator> {
         vec![
-            Operator::JMP_DEF("main".to_string(), 3),//0
-            Operator::JMP_DEF("print".to_string(), 16),//1
-            Operator::JMP_DEF("except".to_string(),21), //2
+            //commented values are the program counter if not using JMP_SCAN to load labels.
+            Operator::JMP_SCAN,
+            // Operator::JMP_DEF("main".to_string(), 3),//0
+            // Operator::JMP_DEF("print".to_string(), 16),//1
+            // Operator::JMP_DEF("except".to_string(),21), //2
             //main
             Operator::LABEL("main".to_string()),//3
             Operator::EXCEPT_CATCH("except".to_string()),//4

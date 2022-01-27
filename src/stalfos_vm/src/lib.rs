@@ -4,7 +4,7 @@ pub mod ops;
 mod op_calls;
 
 pub mod stalfos {
-    use std::borrow::{BorrowMut};
+    use std::borrow::{Borrow, BorrowMut};
     use std::collections::{BTreeMap, HashMap};
     use crate::op_calls;
     pub use crate::ops::ops as ops;
@@ -22,8 +22,16 @@ pub mod stalfos {
         pub stack_frame_pointers: Vec<(usize,usize)>,
 
 
+        // signals are boolean flags that represent program state and can be observed from the outside
+
+        // checked after each instruction; exits if true
         pub signal_finished: bool,
+
+        // will print extra information if true
         pub signal_debug: bool,
+
+        // if the previous instruction caused an arithmetic overflow, this will be set
+        pub signal_overflow: bool,
 
     }
 
@@ -41,6 +49,7 @@ pub mod stalfos {
                 program_counter: 0,
                 signal_finished: false,
                 signal_debug: false,
+                signal_overflow:false
             }
         }
 
@@ -57,6 +66,7 @@ pub mod stalfos {
                 program_counter: 0,
                 signal_finished: false,
                 signal_debug: true,
+                signal_overflow:false
             }
         }
 
@@ -95,10 +105,30 @@ pub mod stalfos {
         }
 
         fn process_jump_definitions(&mut self) -> () {
-            for op in self.program.iter_mut() {
+            let program_size = self.program.len();
+            // let program = self.program
+            for op in self.program.iter() {
                 match op {
                     Operator::JMP_DEF(key, pointer) => {
                         self.jmp_table.insert(key.to_string(), *pointer);
+                    },
+                    Operator::JMP_SCAN =>{
+                        let current_pc = self.program_counter;
+                        // let program_size = self.program.len();
+                        for i in current_pc..program_size {
+                            let op = self.program[i].borrow();
+                            match op {
+                                Operator::LABEL(key) => {
+                                    let label = key.to_string();
+
+                                    if !self.jmp_table.contains_key(&*label){
+                                        self.jmp_table.insert(label, i);
+                                    }
+                                }
+
+                                _ => {}
+                            }
+                        }
                     }
                     _ => return,
                 }
@@ -127,10 +157,13 @@ pub mod stalfos {
         }
 
 
-        pub(crate) fn syscall(syscall_id: usize, args: Vec<u32>) -> bool {
+        pub(crate) fn syscall(syscall_id: usize, mut args: Vec<u32>) -> bool {
+            if args.is_empty() {
+                args.push(1)
+            }
             match syscall_id {
                 0 => {
-                    panic!("{}", args[0]);
+                    panic!("VM called a panic! with code {}", args[0]);
                 }
                 1 => {
                     println!("{}", args[0]);

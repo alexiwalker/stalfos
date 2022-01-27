@@ -42,11 +42,14 @@ pub mod ops {
         CNT, //popcnt, get number of bits set
 
         CMP,
+        JMP_SCAN, // scans through the program for all LABELS and adds them (and their addresses) to the jmp_label map. may be slow on large programs
         JMP(String),
         //compare all bits. (lop,rop)-> *u32 lop - *u32 rop == 0. cast to uint, sub, compare to 0
         JMPe(String),
         //jump if cmp bit is 1
         JMPne(String), //jump if cmp bit is 0
+
+        //jumps to left is stack pop is 0, right otherwise.
         JMPs(String,String),
         // This is a compile time operation to determine the location for the jumps.
         // Therefore, all JUMP_DEFS are placed at the start of the binary
