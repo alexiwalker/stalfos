@@ -6,6 +6,7 @@ pub mod op_calls {
     pub fn execute_operation(vm: &mut crate::stalfos::VM) -> bool {
         let op = vm.program[vm.program_counter].borrow_mut();
         let mut has_changed_ptr = false;
+        let mut overflow = false;
         match op {
             Operator::PUSH(v) => {
                 vm.stack.push(*v);
@@ -158,28 +159,30 @@ pub mod op_calls {
                 let b = u_to_i(vm.stack.pop().unwrap());
                 let (v, o) = i32::overflowing_add(a, b);
                 vm.stack.push(i_to_u(v));
-                vm.signal_overflow = o;
+                overflow= o;
             }
             Operator::SUBi => {
                 let a = u_to_i(vm.stack.pop().unwrap());
                 let b = u_to_i(vm.stack.pop().unwrap());
                 let (v, o) = i32::overflowing_sub(a, b);
                 vm.stack.push(i_to_u(v));
-                vm.signal_overflow = o;
+                overflow= o;
+
             }
             Operator::MULi => {
                 let a = u_to_i(vm.stack.pop().unwrap());
                 let b = u_to_i(vm.stack.pop().unwrap());
                 let (v, o) = i32::overflowing_mul(a, b);
                 vm.stack.push(i_to_u(v));
-                vm.signal_overflow = o;
+                overflow= o;
+
             }
             Operator::DIVi => {
                 let a = u_to_i(vm.stack.pop().unwrap());
                 let b = u_to_i(vm.stack.pop().unwrap());
                 let (v, o) = i32::overflowing_div(a, b);
                 vm.stack.push(i_to_u(v));
-                vm.signal_overflow = o;
+                overflow= o;
             }
             Operator::MODi => {
                 let a = u_to_i(vm.stack.pop().unwrap());
@@ -501,28 +504,28 @@ pub mod op_calls {
                 let v2 = vm.stack.pop().unwrap();
                 let (v, o) = u32::overflowing_add(v1, v2);
                 vm.stack.push(v);
-                vm.signal_overflow = o
+                overflow= o;
             }
             Operator::SUBu => {
                 let v1 = vm.stack.pop().unwrap();
                 let v2 = vm.stack.pop().unwrap();
                 let (v, o) = u32::overflowing_sub(v1, v2);
                 vm.stack.push(v);
-                vm.signal_overflow = o
+                overflow= o;
             }
             Operator::MULu => {
                 let v1 = vm.stack.pop().unwrap();
                 let v2 = vm.stack.pop().unwrap();
                 let (v, o) = u32::overflowing_mul(v1, v2);
                 vm.stack.push(v);
-                vm.signal_overflow = o
+                overflow= o;
             }
             Operator::DIVu => {
                 let v1 = vm.stack.pop().unwrap();
                 let v2 = vm.stack.pop().unwrap();
                 let (v, o) = u32::overflowing_div(v1, v2);
                 vm.stack.push(v);
-                vm.signal_overflow = o
+                overflow= o;
             }
             Operator::MODu => {
                 let v1 = vm.stack.pop().unwrap();
@@ -541,10 +544,11 @@ pub mod op_calls {
                     vm.stack_frame_pointers.push((before, vm.program_counter));
                 }
 
-                vm.signal_overflow=false
 
             }
         }
+
+        vm.signal_overflow = overflow;
 
         has_changed_ptr
     }
