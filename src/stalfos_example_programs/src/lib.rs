@@ -100,7 +100,7 @@ pub mod example_programs {
             Operator::SETBYTE(1,15,0b0010_1001),
             Operator::LOADD(1),
             Operator::SYSCALLD(3),
-            Operator::CONST_S(2,"\"hello,world! :)\" was built by setting individual bytes. You can manipulate individual bytes in a string by index with SETBYTE. \n\nTo create a string, use CONST_S. To put it on the stack with its length, call LOADD. To print it, call SYSCALLD(3)".to_string()),
+            Operator::CONST_S(2,"\"hello, world! :)\" was built by setting individual bytes. You can manipulate individual bytes in a string by index with SETBYTE. \n\nTo create a string, use CONST_S. To put it on the stack with its length, call LOADD. To print it, call SYSCALLD(3)".to_string()),
             Operator::LOADD(2),
             Operator::SYSCALLD(3),
             Operator::CONST_S(2,"Allocation names can be reused. This, and the message above, both use identifier 2. This will cause a reallocation. The previous value will be lost The next line is longer and also uses ID 2. This does not affect the resulting string".to_string()),
