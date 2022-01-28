@@ -12,6 +12,13 @@ pub mod example_programs {
         ]
     }
 
+    pub fn single_opcode()->Vec<Operator>{
+        vec![
+            Operator::CONST_S(1,"hello world!".to_string()),
+
+        ]
+    }
+
     pub fn jmp_except_catch() -> Vec<Operator> {
         vec![
             //commented values are the program counter if not using JMP_SCAN to load labels.
@@ -33,22 +40,42 @@ pub mod example_programs {
             Operator::CMP,//13
             Operator::JMPe("print".to_string()),//14
             Operator::RET,//15
-
-
-            //print
+            //
+            //
+            // print
             Operator::LABEL("print".to_string()),//16
             Operator::PUSH(42069),//17
             Operator::SYSCALL(1, 1),//18
             Operator::EXCEPT_THROW,//19
             Operator::RET,//20
-
-            //except
+            //
+            // except
             Operator::LABEL("except".to_string()),//21
             Operator::PUSH(1111),//22
             Operator::SYSCALL(1, 1),//23
             Operator::SYSCALL(2, 0),//23
         ]
     }
+    /**
+0    222,    magic
+1    173,    magic
+2    250,    magic
+3    206,    magic
+4    76,     jmp_scan     <- opcode
+5    21,     label        <- opcode
+6    0,      usize 4
+7    0,      usize 4
+8    0,      usize 4
+9    0,      usize 4
+10   0,      usize 4
+11   0,      usize 4
+12   0,      usize 4
+13   4,      usize 4      <- string size prefix
+14   109,    string byte  <- string
+15   97,     string byte  <- string
+16   105,    string byte  <- string
+17   110     string byte  <- string
+    */
 
     pub fn string_manipulation() -> Vec<Operator> {
         vec![

@@ -2,6 +2,7 @@ extern crate core;
 
 pub mod ops;
 mod op_calls;
+pub mod assembler;
 
 pub mod stalfos {
     use std::borrow::{Borrow, BorrowMut};
