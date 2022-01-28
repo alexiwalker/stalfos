@@ -638,6 +638,45 @@ pub mod op_calls {
 
                 vm.signal_finished = !program_continue;
             }
+            Operator::EMIT => {
+                let v = vm.stack.pop().unwrap();
+                vm.output.push(v);
+            }
+            Operator::EMITS(_v) => {
+                // get the string from the memory as u32 chunks, convert each to 4 chars, convert chars to string
+                //will do in the future
+            }
+            Operator::EMITW(ptr) => {
+                let v = vm.alloc_table[&ptr];
+                let (stack_location, _) = v;
+                let val = vm.memory[stack_location];
+                vm.output.push(val);
+            }
+            Operator::EMITD(ptr) => {
+                let v = vm.alloc_table[&ptr];
+                let (stack_location, size) = v;
+                let size = size as usize;
+                for i in 0..size {
+                    let val = vm.memory[stack_location + i];
+                    vm.output.push(val);
+                }
+
+                vm.output.push(size as u32);
+            }
+            Operator::DUP => {
+                let v = vm.stack.last().unwrap().clone();
+                vm.stack.push(v);
+            }
+            Operator::DUPO(offset) => {
+                let v = vm.stack[vm.stack.len() - *offset].clone();
+                vm.stack.push(v);
+            },
+            Operator::SWAP => {
+                let v1 = vm.stack.pop().unwrap();
+                let v2 = vm.stack.pop().unwrap();
+                vm.stack.push(v1);
+                vm.stack.push(v2);
+            }
         }
 
         vm.signal_overflow = overflow;
@@ -668,24 +707,7 @@ pub mod op_calls {
 
     fn bytes_to_i(bytes: [u8; 4]) -> i32 {
         return i32::from_be_bytes(bytes);
-        // let mut i;
-        // unsafe {
-        //     let ptr = bytes.as_ptr() as *const c_void;
-        //     i = *(ptr as *const i32);
-        // }
-        // i
     }
-
-
-    // fn f_to_i(f: f32) -> i32 {
-    //     let bytes = f_to_bytes(f);
-    //     bytes_to_i(bytes)
-    // }
-    //
-    // fn i_to_f(i: i32) -> f32 {
-    //     let bytes = i_to_bytes(i);
-    //     bytes_to_f(bytes)
-    // }
 
     fn u_to_f(u: u32) -> f32 {
         let bytes = u_to_bytes(u);

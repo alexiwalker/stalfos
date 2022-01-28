@@ -20,6 +20,7 @@ pub mod stalfos {
         pub alloc_table: BTreeMap<usize, (usize, u32)>,
         pub jmp_table: HashMap<String, usize>,
         pub stack_frame_pointers: Vec<(usize,usize)>,
+        pub output: Vec<u32>,
 
 
         // signals are boolean flags that represent program state and can be observed from the outside
@@ -42,6 +43,7 @@ pub mod stalfos {
                 memory: vec![],
                 jmp_table: HashMap::new(),
                 stack_frame_pointers: vec![],
+                output:vec![],
 
                 //dict that maps a preset value to a memory address
                 alloc_table: BTreeMap::new(),
@@ -59,7 +61,7 @@ pub mod stalfos {
                 memory: vec![],
                 jmp_table: HashMap::new(),
                 stack_frame_pointers: vec![],
-
+                output:vec![],
                 //dict that maps a preset value to a memory address
                 alloc_table: BTreeMap::new(),
                 program: vec![],
