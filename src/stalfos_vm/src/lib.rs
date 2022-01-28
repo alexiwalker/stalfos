@@ -174,12 +174,37 @@ pub mod stalfos {
                     println!("VM ended with exit code {}", args[0]);
                     return false
                 }
+                3 => {
+                    let string = VM::get_string_from_u32_vec(args);
+                    println!("{}", string);
+
+                }
                 _ => {
                     println!("Unknown syscall: {}", syscall_id);
                 }
             }
 
             return true;
+        }
+
+        fn get_string_from_u32_vec(values: Vec<u32>) -> String {
+            //convert each u32 into 4 chars
+            let mut string = String::new();
+            for value in values {
+                let mut chars = [0; 4];
+                chars.copy_from_slice(&value.to_be_bytes());
+                string.push_str(&String::from_utf8_lossy(&chars));
+            }
+
+            //remove trailing null chars
+            let mut index = string.len() - 1;
+            while string.chars().nth(index).unwrap() == '\0' {
+                index -= 1;
+            }
+            string.truncate(index + 1);
+
+            return string;
+
         }
 
         pub fn allocate(&mut self, ptr: &mut usize, size: &mut u32) -> usize {

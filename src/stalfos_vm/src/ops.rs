@@ -16,6 +16,7 @@ pub mod ops {
         CONST_F(usize, f32),
         CONST_I(usize, i32),
         CONST_B(usize, bool),
+        CONST_S(usize, String),
         LOAD_CONST(usize),
 
         //preset ptr id, n bytes

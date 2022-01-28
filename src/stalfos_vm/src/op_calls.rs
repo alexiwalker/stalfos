@@ -24,9 +24,11 @@ pub mod op_calls {
                 let v = vm.alloc_table[&ptr];
                 let (stack_location, size) = v;
                 let size = size as usize;
-                for i in (size-1)..=0 {
-                    vm.stack.push(vm.memory[stack_location + i ]);
+                for i in 0..size {
+                    let val = vm.memory[stack_location + i];
+                    vm.stack.push(val);
                 }
+
                 vm.stack.push(size as u32);
             }
             Operator::CONST_U(identifier, value_to_store) => {
@@ -77,6 +79,79 @@ pub mod op_calls {
                 vm.alloc_table.insert(*ptr, (vm.memory.len(), v));
                 vm.memory.push(v as u32);
             }
+            Operator::CONST_S(ptr, string) => {
+                //split string into byte chunks
+                let mut string_bytes = string.as_bytes().to_vec();
+
+                //pad with null bytes to a multiple of 4
+                let mut padding = 0;
+                if string_bytes.len() % 4 != 0 {
+                    padding = 4 - (string_bytes.len() % 4);
+                }
+                for _ in 0..padding {
+                    string_bytes.push(0);
+                }
+
+                //split into 4 byte chunks and convert each chunk to u32
+                let mut string_chunks = Vec::new();
+                for i in 0..string_bytes.len() {
+                    if i % 4 == 0 {
+                        let mut chunk = [0; 4];
+                        chunk[0] = string_bytes[i];
+                        chunk[1] = string_bytes[i + 1];
+                        chunk[2] = string_bytes[i + 2];
+                        chunk[3] = string_bytes[i + 3];
+                        string_chunks.push(u32::from_be_bytes(chunk));
+                    }
+                }
+
+                let size = string_chunks.len() as u32;
+                //store the chunks in the memory
+                let mut allocated_memory_location = 0;
+                {
+                    let mut _s = false;
+                    let table = vm.alloc_table.borrow_mut();
+
+                    //get all keys as a vector
+                    let keys: Vec<usize> = table.keys().map(|x| *x).collect();
+                    let l = keys.len();
+                    for x in 0..l {
+                        let current_pointer = keys.get(x).unwrap();
+                        let opt_next_pointer = keys.get(x + 1);
+                        let has_next = opt_next_pointer.is_some();
+                        // if the current key is not the final one in the allocations, check if the required size fits between current+len and next
+                        if x < l && has_next {
+                            let next_pointer = keys.get(x + 1).unwrap();
+                            let v = vm.alloc_table[&current_pointer];
+                            let (stack_location, s) = v;
+                            let (next_stack_location, _) = vm.alloc_table[&next_pointer];
+                            if stack_location + s as usize + (size as usize) < next_stack_location {
+                                let allocation = (stack_location, s + size);
+                                let p = *ptr;
+                                vm.alloc_table.insert(p, allocation);
+                                allocated_memory_location = p;
+                                _s = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if !_s {
+                        let end_of_stack = vm.memory.len();
+                        let allocation = (end_of_stack, size);
+                        vm.alloc_table.insert(*ptr, allocation);
+                        for _ in 0..size {
+                            vm.memory.push(0);
+                        }
+
+                        allocated_memory_location = end_of_stack
+                    }
+                }
+
+                for i in 0..string_chunks.len() {
+                    vm.memory[allocated_memory_location + i] = string_chunks[i];
+                }
+            }
             Operator::CONST_I(ptr, v) => {
                 let v = *v as u32;
                 vm.alloc_table.insert(*ptr, (vm.memory.len(), v));
@@ -91,7 +166,6 @@ pub mod op_calls {
                 let v = vm.alloc_table[&ptr];
                 let (stack_location, _) = v;
                 let val = vm.memory[stack_location];
-                println!("{:?}", val);
                 vm.stack.push(val);
             }
             Operator::GETLEN(ptr) => {
@@ -171,30 +245,28 @@ pub mod op_calls {
                 let b = u_to_i(vm.stack.pop().unwrap());
                 let (v, o) = i32::overflowing_add(a, b);
                 vm.stack.push(i_to_u(v));
-                overflow= o;
+                overflow = o;
             }
             Operator::SUBi => {
                 let a = u_to_i(vm.stack.pop().unwrap());
                 let b = u_to_i(vm.stack.pop().unwrap());
                 let (v, o) = i32::overflowing_sub(a, b);
                 vm.stack.push(i_to_u(v));
-                overflow= o;
-
+                overflow = o;
             }
             Operator::MULi => {
                 let a = u_to_i(vm.stack.pop().unwrap());
                 let b = u_to_i(vm.stack.pop().unwrap());
                 let (v, o) = i32::overflowing_mul(a, b);
                 vm.stack.push(i_to_u(v));
-                overflow= o;
-
+                overflow = o;
             }
             Operator::DIVi => {
                 let a = u_to_i(vm.stack.pop().unwrap());
                 let b = u_to_i(vm.stack.pop().unwrap());
                 let (v, o) = i32::overflowing_div(a, b);
                 vm.stack.push(i_to_u(v));
-                overflow= o;
+                overflow = o;
             }
             Operator::MODi => {
                 let a = u_to_i(vm.stack.pop().unwrap());
@@ -516,36 +588,35 @@ pub mod op_calls {
                 let v2 = vm.stack.pop().unwrap();
                 let (v, o) = u32::overflowing_add(v1, v2);
                 vm.stack.push(v);
-                overflow= o;
+                overflow = o;
             }
             Operator::SUBu => {
                 let v1 = vm.stack.pop().unwrap();
                 let v2 = vm.stack.pop().unwrap();
                 let (v, o) = u32::overflowing_sub(v1, v2);
                 vm.stack.push(v);
-                overflow= o;
+                overflow = o;
             }
             Operator::MULu => {
                 let v1 = vm.stack.pop().unwrap();
                 let v2 = vm.stack.pop().unwrap();
                 let (v, o) = u32::overflowing_mul(v1, v2);
                 vm.stack.push(v);
-                overflow= o;
+                overflow = o;
             }
             Operator::DIVu => {
                 let v1 = vm.stack.pop().unwrap();
                 let v2 = vm.stack.pop().unwrap();
                 let (v, o) = u32::overflowing_div(v1, v2);
                 vm.stack.push(v);
-                overflow= o;
+                overflow = o;
             }
             Operator::MODu => {
                 let v1 = vm.stack.pop().unwrap();
                 let v2 = vm.stack.pop().unwrap();
-                vm.stack.push(v1%v2);
+                vm.stack.push(v1 % v2);
             }
             Operator::JMPo(location) => {
-
                 if vm.signal_overflow {
                     let ptr = vm.jmp_table.get(location).unwrap();
                     let before = vm.program_counter;
@@ -555,8 +626,6 @@ pub mod op_calls {
                     has_changed_ptr = true;
                     vm.stack_frame_pointers.push((before, vm.program_counter));
                 }
-
-
             }
             Operator::SYSCALLD(syscall_id) => {
                 let n_args = vm.stack.pop().unwrap();

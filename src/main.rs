@@ -3,7 +3,7 @@ use stalfos_example_programs::example_programs;
 
 fn main() {
 
-    let program = example_programs::default_example_program();
+    let program = example_programs::hello_world();
 
     let mut vm = stalfos::VM::new();
 
