@@ -430,9 +430,9 @@ pub mod op_calls {
                 //noop, catches are handled during a throw unwrap
             }
             Operator::LABEL(str) => {
-                // if vm.signal_debug {
-                println!("found label {} at position {}", str, vm.program_counter);
-                // }
+                if vm.signal_debug {
+                    println!("found label {} at position {}", str, vm.program_counter);
+                }
             }
 
             Operator::DEALLOC(ptr) => {
@@ -672,6 +672,16 @@ pub mod op_calls {
                 let v2 = vm.stack.pop().unwrap();
                 vm.stack.push(v1);
                 vm.stack.push(v2);
+            }
+            Operator::OR => {
+                let v1 = vm.stack.pop().unwrap();
+                let v2 = vm.stack.pop().unwrap();
+                vm.stack.push(v1 | v2);
+            }
+            Operator::NOR => {
+                let v1 = vm.stack.pop().unwrap();
+                let v2 = vm.stack.pop().unwrap();
+                vm.stack.push(!(v1 | v2));
             }
         }
 

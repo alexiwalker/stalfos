@@ -291,6 +291,12 @@ pub mod assembler {
                 /*opcode :74*/ Operator::CNT => val.push(0x4A),
                 /*opcode :75*/ Operator::CMP => val.push(0x4B),
                 /*opcode :76*/ Operator::JMP_SCAN => val.push(0x4C),
+                /*opcode :77*/ Operator::OR => {
+                    val.push(0x4D);
+                }
+                /*opcode :78*/ Operator::NOR => {
+                    val.push(0x4E);
+                }
             }
         }
 
@@ -693,7 +699,15 @@ pub mod assembler {
                 0x4B => {
                     operations.push(Operator::CMP);
                 }
-                0x4c => operations.push(Operator::JMP_SCAN),
+                0x4c => {
+                    operations.push(Operator::JMP_SCAN)
+                }
+                0x4D => {
+                    operations.push(Operator::OR);
+                }
+                0x4E => {
+                    operations.push(Operator::NOR);
+                }
                 _ => {
                     panic!("Unknown opcode: {}", byte);
                 }

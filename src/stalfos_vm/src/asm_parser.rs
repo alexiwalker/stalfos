@@ -248,6 +248,8 @@ pub mod asm_parser {
             "ASL" => Operator::ASL,
             "NEG" => Operator::NEG,
             "AND" => Operator::AND,
+            "OR" => Operator::OR,
+            "NOR" => Operator::NOR,
             "XOR" => Operator::XOR,
             "NAND" => Operator::NAND,
             "CNT" => Operator::CNT,

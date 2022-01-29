@@ -74,6 +74,8 @@ pub mod ops {
         NEG,
         AND,
         XOR,
+        OR,
+        NOR,
         NAND,
         CNT, //popcnt, get number of bits set
         CMP,
