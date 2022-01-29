@@ -1,6 +1,3 @@
-use stalfos_example_programs::example_programs;
-use stalfos_vm::assembler::assembler;
-use stalfos_vm::assembler::assembler::assemble;
 use stalfos_vm::assembler::assembler::parse_binary;
 use stalfos_vm::stalfos;
 use std::fs::File;
