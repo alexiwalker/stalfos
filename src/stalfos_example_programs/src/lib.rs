@@ -1,22 +1,19 @@
 pub mod example_programs {
     use stalfos_vm::stalfos::ops::Operator;
 
-    pub fn hello_world()->Vec<Operator>{
+    pub fn hello_world() -> Vec<Operator> {
         vec![
             Operator::JMP_SCAN,
             Operator::LABEL("main".to_string()),
-            Operator::CONST_S(1,"hello world!".to_string()),
+            Operator::CONST_S(1, "hello world!".to_string()),
             Operator::LOADD(1),
             Operator::SYSCALLD(3),
             Operator::RET,
         ]
     }
 
-    pub fn single_opcode()->Vec<Operator>{
-        vec![
-            Operator::CONST_S(1,"hello world!".to_string()),
-
-        ]
+    pub fn single_opcode() -> Vec<Operator> {
+        vec![Operator::CONST_S(1, "hello world!".to_string())]
     }
 
     pub fn jmp_except_catch() -> Vec<Operator> {
@@ -27,55 +24,55 @@ pub mod example_programs {
             // Operator::JMP_DEF("print".to_string(), 16),//1
             // Operator::JMP_DEF("except".to_string(),21), //2
             //main
-            Operator::LABEL("main".to_string()),//3
-            Operator::EXCEPT_CATCH("except".to_string()),//4
-            Operator::PUSH(5),//5
-            Operator::PUSH(5),//6
-            Operator::MULi,//7
-            Operator::POPS(1),//8
-            Operator::LOAD(1),//9
-            Operator::SYSCALL(1, 1),//10
-            Operator::PUSH(25),//11
-            Operator::LOAD(1),//12
-            Operator::CMP,//13
-            Operator::JMPe("print".to_string()),//14
-            Operator::RET,//15
+            Operator::LABEL("main".to_string()),          //3
+            Operator::EXCEPT_CATCH("except".to_string()), //4
+            Operator::PUSH(5),                            //5
+            Operator::PUSH(5),                            //6
+            Operator::MULi,                               //7
+            Operator::POPS(1),                            //8
+            Operator::LOAD(1),                            //9
+            Operator::SYSCALL(1, 1),                      //10
+            Operator::PUSH(25),                           //11
+            Operator::LOAD(1),                            //12
+            Operator::CMP,                                //13
+            Operator::JMPe("print".to_string()),          //14
+            Operator::RET,                                //15
             //
             //
             // print
-            Operator::LABEL("print".to_string()),//16
-            Operator::PUSH(42069),//17
-            Operator::SYSCALL(1, 1),//18
-            Operator::EXCEPT_THROW,//19
-            Operator::RET,//20
+            Operator::LABEL("print".to_string()), //16
+            Operator::PUSH(42069),                //17
+            Operator::SYSCALL(1, 1),              //18
+            Operator::EXCEPT_THROW,               //19
+            Operator::RET,                        //20
             //
             // except
-            Operator::LABEL("except".to_string()),//21
-            Operator::PUSH(1111),//22
-            Operator::SYSCALL(1, 1),//23
-            Operator::SYSCALL(2, 0),//23
+            Operator::LABEL("except".to_string()), //21
+            Operator::PUSH(1111),                  //22
+            Operator::SYSCALL(1, 1),               //23
+            Operator::SYSCALL(2, 0),               //23
         ]
     }
     /**
-0    222,    magic
-1    173,    magic
-2    250,    magic
-3    206,    magic
-4    76,     jmp_scan     <- opcode
-5    21,     label        <- opcode
-6    0,      usize 4
-7    0,      usize 4
-8    0,      usize 4
-9    0,      usize 4
-10   0,      usize 4
-11   0,      usize 4
-12   0,      usize 4
-13   4,      usize 4      <- string size prefix
-14   109,    string byte  <- string
-15   97,     string byte  <- string
-16   105,    string byte  <- string
-17   110     string byte  <- string
-    */
+    0    222,    magic
+    1    173,    magic
+    2    250,    magic
+    3    206,    magic
+    4    76,     jmp_scan     <- opcode
+    5    21,     label        <- opcode
+    6    0,      usize 4
+    7    0,      usize 4
+    8    0,      usize 4
+    9    0,      usize 4
+    10   0,      usize 4
+    11   0,      usize 4
+    12   0,      usize 4
+    13   4,      usize 4      <- string size prefix
+    14   109,    string byte  <- string
+    15   97,     string byte  <- string
+    16   105,    string byte  <- string
+    17   110     string byte  <- string
+        */
 
     pub fn string_manipulation() -> Vec<Operator> {
         vec![

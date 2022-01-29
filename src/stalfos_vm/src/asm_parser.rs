@@ -1,6 +1,6 @@
 pub mod asm_parser {
-    use std::str::FromStr;
     use crate::stalfos::ops::Operator;
+    use std::str::FromStr;
 
     pub fn parse_string(string: String) -> Vec<Operator> {
         //read character at a time, creating a new string each time to parse until eol or comment
@@ -23,9 +23,15 @@ pub mod asm_parser {
                 while next != '\r' && next != '\n' {
                     i += 1;
                     next = string.chars().nth(i).unwrap();
-                    if next == '\r' && (string.chars().nth(i + 1).is_some() && string.chars().nth(i + 1).unwrap() == '\n') {
+                    if next == '\r'
+                        && (string.chars().nth(i + 1).is_some()
+                            && string.chars().nth(i + 1).unwrap() == '\n')
+                    {
                         i += 1;
-                    } else if next == '\n' && (string.chars().nth(i + 1).is_some() && string.chars().nth(i + 1).unwrap() == '\r') {
+                    } else if next == '\n'
+                        && (string.chars().nth(i + 1).is_some()
+                            && string.chars().nth(i + 1).unwrap() == '\r')
+                    {
                         i += 1;
                     }
                 }
@@ -39,9 +45,16 @@ pub mod asm_parser {
                 i += 1;
                 let _next = string.chars().nth(i);
                 let valid = _next.is_some();
-                if valid && _next.unwrap() == '\r' && (string.chars().nth(i + 1).is_some() && string.chars().nth(i + 1).unwrap() == '\n') {
+                if valid
+                    && _next.unwrap() == '\r'
+                    && (string.chars().nth(i + 1).is_some()
+                        && string.chars().nth(i + 1).unwrap() == '\n')
+                {
                     i += 1;
-                } else if next == '\n' && (string.chars().nth(i + 1).is_some() && string.chars().nth(i + 1).unwrap() == '\r') {
+                } else if next == '\n'
+                    && (string.chars().nth(i + 1).is_some()
+                        && string.chars().nth(i + 1).unwrap() == '\r')
+                {
                     i += 1;
                 }
 
@@ -50,7 +63,6 @@ pub mod asm_parser {
                     current_line = String::new();
                 }
             } else if next == '"' {
-
                 //consume string and add it to line
                 let mut string_builder = String::new();
                 i += 1;
@@ -76,7 +88,6 @@ pub mod asm_parser {
                 i += 1;
                 current_line.push_str(" ");
                 // i+=1;
-
             } else {
                 //add to current line
                 current_line.push(next);
@@ -88,10 +99,8 @@ pub mod asm_parser {
             ops.push(get_operation_from_line(line));
         }
 
-
         return ops;
     }
-
 
     fn get_operation_from_line(line: String) -> Operator {
         //remove leading whitespace from line;
@@ -100,7 +109,6 @@ pub mod asm_parser {
         let segments: Vec<String> = get_segments_from_line(trimmed_line.to_string());
 
         let first_segment = &*segments.get(0).unwrap().clone().to_owned();
-
 
         match first_segment {
             "JMP_SCAN" => {
@@ -141,7 +149,7 @@ pub mod asm_parser {
             }
             "CONST_S" => {
                 let us = str_to_usize(&*segments.get(1).unwrap());
-                let s =clean_string(segments.get(2).unwrap().clone());
+                let s = clean_string(segments.get(2).unwrap().clone());
 
                 return Operator::CONST_S(us, s);
             }
@@ -158,34 +166,28 @@ pub mod asm_parser {
                 );
             }
             "DEALLOC" => {
-                return Operator::DEALLOC(
-                    str_to_usize(&*segments.get(1).unwrap())
-                );
+                return Operator::DEALLOC(str_to_usize(&*segments.get(1).unwrap()));
             }
             "POPS" => {
-                return Operator::POPS(
-                    str_to_usize(&*segments.get(1).unwrap())
-                );
+                return Operator::POPS(str_to_usize(&*segments.get(1).unwrap()));
             }
             "GETLEN" => {
-                return Operator::GETLEN(
-                    str_to_usize(&*segments.get(1).unwrap())
-                );
+                return Operator::GETLEN(str_to_usize(&*segments.get(1).unwrap()));
             }
             "GETBYTELEN" => {
-                return Operator::GETBYTELEN(
-                    str_to_usize(&*segments.get(1).unwrap())
-                );
+                return Operator::GETBYTELEN(str_to_usize(&*segments.get(1).unwrap()));
             }
             "GETBYTE" => {
                 return Operator::GETBYTE(
                     str_to_usize(&*segments.get(1).unwrap()),
-                    str_to_usize(&*segments.get(2).unwrap()));
+                    str_to_usize(&*segments.get(2).unwrap()),
+                );
             }
             "GETWORD" => {
                 return Operator::GETWORD(
                     str_to_usize(&*segments.get(1).unwrap()),
-                    str_to_usize(&*segments.get(2).unwrap()));
+                    str_to_usize(&*segments.get(2).unwrap()),
+                );
             }
             "SETBYTE" => {
                 return Operator::SETBYTE(
@@ -207,144 +209,60 @@ pub mod asm_parser {
                 return Operator::DUP;
             }
             "DUPO" => {
-                return Operator::DUPO(
-                    str_to_usize(&*segments.get(1).unwrap())
-                );
+                return Operator::DUPO(str_to_usize(&*segments.get(1).unwrap()));
             }
 
             "SWAP" => {
                 return Operator::SWAP;
             }
-            "ADDu" => {
-                Operator::ADDu
-            }
-            "ADDi" => {
-                Operator::ADDi
-            }
-            "ADDfi" => {
-                Operator::ADDfi
-            }
-            "ADDif" => {
-                Operator::ADDif
-            }
-            "ADDf" => {
-                Operator::ADDf
-            }
-            "SUBu" => {
-                Operator::SUBu
-            }
-            "SUBi" => {
-                Operator::SUBi
-            }
-            "SUBfi" => {
-                Operator::SUBfi
-            }
-            "SUBif" => {
-                Operator::SUBif
-            }
-            "SUBf" => {
-                Operator::SUBf
-            }
-            "MULu" => {
-                Operator::MULu
-            }
-            "MULi" => {
-                Operator::MULi
-            }
-            "MULfi" => {
-                Operator::MULfi
-            }
-            "MULif" => {
-                Operator::MULif
-            }
-            "MULf" => {
-                Operator::MULf
-            }
-            "DIVu" => {
-                Operator::DIVu
-            }
-            "DIVi" => {
-                Operator::DIVi
-            }
-            "DIVfi" => {
-                Operator::DIVfi
-            }
-            "DIVif" => {
-                Operator::DIVif
-            }
-            "DIVf" => {
-                Operator::DIVf
-            }
-            "MODu" => {
-                Operator::MODu
-            }
-            "MODi" => {
-                Operator::MODi
-            }
-            "MODfi" => {
-                Operator::MODfi
-            }
-            "MODif" => {
-                Operator::MODif
-            }
-            "MODf" => {
-                Operator::MODf
-            }
-            "ROR" => {
-                Operator::ROR
-            }
-            "ROL" => {
-                Operator::ROL
-            }
-            "LSR" => {
-                Operator::LSR
-            }
-            "ASR" => {
-                Operator::ASR
-            }
-            "LSL" => {
-                Operator::LSL
-            }
-            "ASL" => {
-                Operator::ASL
-            }
-            "NEG" => {
-                Operator::NEG
-            }
-            "AND" => {
-                Operator::AND
-            }
-            "XOR" => {
-                Operator::XOR
-            }
-            "NAND" => {
-                Operator::NAND
-            }
-            "CNT" => {
-                Operator::CNT
-            }
-            "CMP" => {
-                Operator::CMP
-            }
+            "ADDu" => Operator::ADDu,
+            "ADDi" => Operator::ADDi,
+            "ADDfi" => Operator::ADDfi,
+            "ADDif" => Operator::ADDif,
+            "ADDf" => Operator::ADDf,
+            "SUBu" => Operator::SUBu,
+            "SUBi" => Operator::SUBi,
+            "SUBfi" => Operator::SUBfi,
+            "SUBif" => Operator::SUBif,
+            "SUBf" => Operator::SUBf,
+            "MULu" => Operator::MULu,
+            "MULi" => Operator::MULi,
+            "MULfi" => Operator::MULfi,
+            "MULif" => Operator::MULif,
+            "MULf" => Operator::MULf,
+            "DIVu" => Operator::DIVu,
+            "DIVi" => Operator::DIVi,
+            "DIVfi" => Operator::DIVfi,
+            "DIVif" => Operator::DIVif,
+            "DIVf" => Operator::DIVf,
+            "MODu" => Operator::MODu,
+            "MODi" => Operator::MODi,
+            "MODfi" => Operator::MODfi,
+            "MODif" => Operator::MODif,
+            "MODf" => Operator::MODf,
+            "ROR" => Operator::ROR,
+            "ROL" => Operator::ROL,
+            "LSR" => Operator::LSR,
+            "ASR" => Operator::ASR,
+            "LSL" => Operator::LSL,
+            "ASL" => Operator::ASL,
+            "NEG" => Operator::NEG,
+            "AND" => Operator::AND,
+            "XOR" => Operator::XOR,
+            "NAND" => Operator::NAND,
+            "CNT" => Operator::CNT,
+            "CMP" => Operator::CMP,
             "JMP" => {
-                return Operator::JMP(
-                    clean_string(segments.get(1).unwrap().clone())
-                );
+                return Operator::JMP(clean_string(segments.get(1).unwrap().clone()));
             }
             "JMPo" => {
-                return Operator::JMPo(
-                    clean_string(segments.get(1).unwrap().clone())
-                );
+                return Operator::JMPo(clean_string(segments.get(1).unwrap().clone()));
             }
             "JMPe" => {
-                return Operator::JMPe(
-                    clean_string(segments.get(1).unwrap().clone())
-                );
+                return Operator::JMPe(clean_string(segments.get(1).unwrap().clone()));
             }
             "JMPne" => {
-                return Operator::JMPne(
-                    clean_string(segments.get(1).unwrap().clone())
-                );
+                return Operator::JMPne(clean_string(segments.get(1).unwrap().clone()));
             }
             "JMPs" => {
                 return Operator::JMPs(
@@ -359,9 +277,7 @@ pub mod asm_parser {
                 );
             }
             "LABEL" => {
-                return Operator::LABEL(
-                    clean_string(segments.get(1).unwrap().clone())
-                );
+                return Operator::LABEL(clean_string(segments.get(1).unwrap().clone()));
             }
             "SYSCALL" => {
                 return Operator::SYSCALL(
@@ -370,17 +286,13 @@ pub mod asm_parser {
                 );
             }
             "SYSCALLD" => {
-                return Operator::SYSCALLD(
-                    str_to_usize(&*segments.get(1).unwrap()),
-                );
+                return Operator::SYSCALLD(str_to_usize(&*segments.get(1).unwrap()));
             }
             "EXCEPT_THROW" => {
                 return Operator::EXCEPT_THROW;
             }
             "EXCEPT_CATCH" => {
-                return Operator::EXCEPT_CATCH(
-                    clean_string(segments.get(1).unwrap().clone())
-                );
+                return Operator::EXCEPT_CATCH(clean_string(segments.get(1).unwrap().clone()));
             }
             "RET" => {
                 return Operator::RET;
@@ -389,19 +301,13 @@ pub mod asm_parser {
                 return Operator::EMIT;
             }
             "EMITS" => {
-                return Operator::EMITS(
-                    str_to_usize(&*segments.get(1).unwrap()),
-                );
+                return Operator::EMITS(str_to_usize(&*segments.get(1).unwrap()));
             }
             "EMITW" => {
-                return Operator::EMITW(
-                    str_to_usize(&*segments.get(1).unwrap()),
-                );
+                return Operator::EMITW(str_to_usize(&*segments.get(1).unwrap()));
             }
             "EMITD" => {
-                return Operator::EMITD(
-                    str_to_usize(&*segments.get(1).unwrap()),
-                );
+                return Operator::EMITD(str_to_usize(&*segments.get(1).unwrap()));
             }
             &_ => {
                 if first_segment.starts_with(".") {
@@ -444,14 +350,13 @@ pub mod asm_parser {
 
                 string_builder.push(next);
                 let mut v = string_builder.to_string();
-                v=v.replace("\\n", "\n");
-                v=v.replace("\\r", "\r");
+                v = v.replace("\\n", "\n");
+                v = v.replace("\\r", "\r");
                 i += 1;
                 current_segment.push_str(&*v);
                 //finished quoted string, finish segments and start new
                 segments.push(current_segment);
                 current_segment = String::new();
-
             } else {
                 current_segment.push(current_char);
             }
@@ -461,7 +366,6 @@ pub mod asm_parser {
         if current_segment.len() > 0 {
             segments.push(current_segment);
         }
-
 
         return segments.iter().map(|s| s.to_string()).collect();
 
@@ -603,7 +507,10 @@ pub mod asm_parser {
             return false;
         }
 
-        panic!("Could not convert {} to bool. valid formats are 0,1,t,f,true,false", s);
+        panic!(
+            "Could not convert {} to bool. valid formats are 0,1,t,f,true,false",
+            s
+        );
     }
 
     fn clean_string(s: String) -> String {

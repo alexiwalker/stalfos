@@ -1,10 +1,10 @@
-use std::fs::File;
-use std::io::Read;
-use stalfos_vm::stalfos;
-use stalfos_vm::assembler::assembler;
 use stalfos_example_programs::example_programs;
+use stalfos_vm::assembler::assembler;
 use stalfos_vm::assembler::assembler::assemble;
 use stalfos_vm::assembler::assembler::parse_binary;
+use stalfos_vm::stalfos;
+use std::fs::File;
+use std::io::Read;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();

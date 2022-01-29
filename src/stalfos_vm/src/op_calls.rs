@@ -1,7 +1,7 @@
 pub mod op_calls {
-    use std::borrow::{Borrow, BorrowMut};
     use crate::stalfos::ops::Operator;
     use crate::stalfos::VM;
+    use std::borrow::{Borrow, BorrowMut};
 
     pub fn execute_operation(vm: &mut crate::stalfos::VM) -> bool {
         let op = vm.program[vm.program_counter].borrow_mut();
@@ -42,7 +42,6 @@ pub mod op_calls {
                     let keys: Vec<usize> = table.keys().map(|x| *x).collect();
                     let l = keys.len();
                     for x in 0..l {
-
                         // if the current key is not the final one in the allocations, check if the required size fits between current+len and next
                         if x < l {
                             let current_pointer = keys.get(x).unwrap();
@@ -185,7 +184,6 @@ pub mod op_calls {
                 let keys: Vec<usize> = table.keys().map(|x| *x).collect();
                 let l = keys.len();
                 for x in 0..l {
-
                     // if the current key is not the final one in the allocations, check if the required size fits between current+len and next
                     if x < l {
                         let sptr = keys.get(x).unwrap();
@@ -200,7 +198,6 @@ pub mod op_calls {
                         }
                     }
                 }
-
 
                 let p = vm.memory.len();
                 let allocation = (p, *size);
@@ -393,7 +390,6 @@ pub mod op_calls {
                 vm.signal_finished = !program_continue;
             }
             Operator::EXCEPT_THROW => {
-
                 //decrease program counter and inspect its operation until a CATCH is found, deallocating each allocation made in the meantime
                 //when it reaches the value of the most recent jump it will jump back to the previous value of the previous jump
                 let (mut before, mut after) = vm.stack_frame_pointers.pop().unwrap();
@@ -435,7 +431,7 @@ pub mod op_calls {
             }
             Operator::LABEL(str) => {
                 // if vm.signal_debug {
-                    println!("found label {} at position {}", str, vm.program_counter);
+                println!("found label {} at position {}", str, vm.program_counter);
                 // }
             }
 
@@ -670,7 +666,7 @@ pub mod op_calls {
             Operator::DUPO(offset) => {
                 let v = vm.stack[vm.stack.len() - *offset].clone();
                 vm.stack.push(v);
-            },
+            }
             Operator::SWAP => {
                 let v1 = vm.stack.pop().unwrap();
                 let v2 = vm.stack.pop().unwrap();
@@ -683,7 +679,6 @@ pub mod op_calls {
 
         has_changed_ptr
     }
-
 
     fn f_to_bytes(f: f32) -> [u8; 4] {
         f.to_be_bytes()

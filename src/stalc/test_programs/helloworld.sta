@@ -1,0 +1,9 @@
+; comments start with  a semicolon (;) and extend to eol
+; eol is \r \n or \r\n
+
+JMP_SCAN
+.main
+CONST_S 1 "hello, world!"
+LOADD 1
+SYSCALLD 3
+RET
