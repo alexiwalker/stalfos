@@ -51,13 +51,13 @@ pub mod ops {
         ASL, //arithmetic shift left
 
         //bitwise ops
-        NEG,
         //invert all bits
+
+        NEG,
         AND,
         XOR,
         NAND,
         CNT, //popcnt, get number of bits set
-
         CMP,
         JMP_SCAN, // scans through the program for all LABELS and adds them (and their addresses) to the jmp_label map. may be slow on large programs
         JMP(String),

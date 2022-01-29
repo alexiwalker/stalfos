@@ -3,9 +3,17 @@
 version = 3
 
 [[package]]
+name = "stalc"
+version = "0.1.0"
+dependencies = [
+ "stalfos_vm",
+]
+
+[[package]]
 name = "stalfos"
 version = "0.1.0"
 dependencies = [
+ "stalc",
  "stalfos_example_programs",
  "stalfos_vm",
 ]

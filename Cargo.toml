@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 stalfos_vm={path="src/stalfos_vm"}
 stalfos_example_programs={path="src/stalfos_example_programs"}
+stalc = {path="src/stalc"}

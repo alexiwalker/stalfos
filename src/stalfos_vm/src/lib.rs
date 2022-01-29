@@ -1,8 +1,10 @@
 extern crate core;
 
 pub mod ops;
-mod op_calls;
 pub mod assembler;
+pub mod asm_parser;
+
+mod op_calls;
 
 pub mod stalfos {
     use std::borrow::{Borrow, BorrowMut};
@@ -54,6 +56,18 @@ pub mod stalfos {
                 signal_debug: false,
                 signal_overflow:false
             }
+        }
+
+        pub fn run_new(program: Vec<ops::Operator>) -> VM {
+            let mut vm = VM::new();
+            vm.add_ops(program).prepare().run();
+            vm
+        }
+
+        pub fn run_new_debug(program: Vec<ops::Operator>) -> VM {
+            let mut vm = VM::new_debug();
+            vm.add_ops(program).prepare().run();
+            vm
         }
 
         pub fn new_debug() -> VM {

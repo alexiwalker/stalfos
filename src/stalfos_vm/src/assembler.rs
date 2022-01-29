@@ -4,7 +4,7 @@ pub mod assembler {
     use std::mem;
     use crate::ops::ops::Operator;
 
-    pub fn program_to_binary_format(program: &Vec<Operator>) -> Vec<u8> {
+    pub fn assemble(program: &Vec<Operator>) -> Vec<u8> {
         let mut val: Vec<u8> = Vec::new();
 
 
@@ -367,7 +367,7 @@ pub mod assembler {
     }
 
 
-    pub fn stream_operations_from_binary(program_binary: Vec<u8>) -> Vec<Operator> {
+    pub fn parse_binary(program_binary: Vec<u8>) -> Vec<Operator> {
         let mut operations: Vec<Operator> = Vec::new();
         let n_bytes = program_binary.len();
         //check for magic_bytes at start

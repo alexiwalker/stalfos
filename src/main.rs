@@ -1,28 +1,33 @@
+use std::fs::File;
+use std::io::Read;
 use stalfos_vm::stalfos;
 use stalfos_vm::assembler::assembler;
 use stalfos_example_programs::example_programs;
+use stalfos_vm::assembler::assembler::assemble;
+use stalfos_vm::assembler::assembler::parse_binary;
 
 fn main() {
-    let program = example_programs::string_manipulation();
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() < 2 {
+        println!("Usage: stalfos-vm <program>");
+        return;
+    }
 
-    let original_binary = assembler::program_to_binary_format(&program);
+    let path = args[1].clone();
+    //compile hello_world to that path
 
-    let original_binary_length = original_binary.len();
+    let hello_world = example_programs::jmp_except_catch();
+    let hello_world_asm = assemble(&hello_world);
+    assembler::write_to_file(&hello_world_asm, &path);
 
-    let program = assembler::stream_operations_from_binary(original_binary);
+    //read all bytes from file
+    let mut file = File::open(path).unwrap();
+    let mut buffer = Vec::new();
+    file.read_to_end(&mut buffer).unwrap();
+    let program = parse_binary(buffer);
 
-    let replicated_binary = assembler::program_to_binary_format(&program);
+    let vm = stalfos::VM::run_new(program);
 
-    println!("original: {}, replicated:{}", original_binary_length, replicated_binary.len());
+    println!("{:?}", vm.alloc_table);
 
-
-
-    let mut vm = stalfos::VM::new();
-//     //
-    vm.execute_program(program);
-
-
-    let mut vm2 = stalfos::VM::new();
-//     //
-    vm2.execute_program(example_programs::string_manipulation());
 }

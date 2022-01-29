@@ -434,9 +434,9 @@ pub mod op_calls {
                 //noop, catches are handled during a throw unwrap
             }
             Operator::LABEL(str) => {
-                if vm.signal_debug {
+                // if vm.signal_debug {
                     println!("found label {} at position {}", str, vm.program_counter);
-                }
+                // }
             }
 
             Operator::DEALLOC(ptr) => {
