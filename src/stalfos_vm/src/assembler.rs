@@ -4,303 +4,363 @@ pub mod assembler {
     use std::io::Write;
     use std::mem;
 
-    pub fn assemble(program: &Vec<Operator>) -> Vec<u8> {
+    pub fn assemble(program: &Vec<Operator>,library_ns:String) -> Vec<u8> {
         let mut val: Vec<u8> = Vec::new();
 
         //deadface bytes are unique to the stalfos vm, marks the binary as for this project
         let magic_bytes: [u8; 4] = 0xDEADFACE_u32.to_be_bytes();
-        val.extend_from_slice(&magic_bytes);
+        let library_bytes: [u8; 4] = 0xDEADC0DE_u32.to_be_bytes();
+
+        if library_ns.len() > 0 {
+            val.extend_from_slice(&library_bytes);
+            let ns_length = library_ns.len();
+            let ns_len_bytes = ns_length.to_be_bytes();
+            val.extend_from_slice(&ns_len_bytes);
+            val.extend_from_slice(library_ns.as_bytes());
+        } else {
+            val.extend_from_slice(&magic_bytes);
+        }
         for operation in program {
-            match operation {
-                /*opcode : 1*/
-                Operator::PUSH(v) => {
-                    let mut op_bytes: Vec<u8> = vec![0x01];
-                    op_bytes.extend_from_slice(&v.to_be_bytes());
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode : 2*/
-                Operator::LOAD(v) => {
-                    let mut op_bytes: Vec<u8> = vec![0x02];
-                    op_bytes.extend_from_slice(&v.to_be_bytes());
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode : 3*/
-                Operator::LOADD(v_) => {
-                    let mut op_bytes: Vec<u8> = vec![0x03];
-                    op_bytes.extend_from_slice(&v_.to_be_bytes());
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode : 4*/
-                Operator::CONST_U(v1, v2) => {
-                    let mut op_bytes: Vec<u8> = vec![0x04];
-                    op_bytes.extend_from_slice(&v1.to_be_bytes());
-                    op_bytes.extend_from_slice(&v2.to_be_bytes());
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode : 5*/
-                Operator::CONST_F(v1, v2) => {
-                    let mut op_bytes: Vec<u8> = vec![0x05];
-                    op_bytes.extend_from_slice(&v1.to_be_bytes());
-                    op_bytes.extend_from_slice(&v2.to_be_bytes());
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode : 6*/
-                Operator::CONST_I(v1, v2) => {
-                    let mut op_bytes: Vec<u8> = vec![0x06];
-                    op_bytes.extend_from_slice(&v1.to_be_bytes());
-                    op_bytes.extend_from_slice(&v2.to_be_bytes());
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode : 7*/
-                Operator::CONST_B(v1, v2) => {
-                    let mut op_bytes: Vec<u8> = vec![0x07];
-                    op_bytes.extend_from_slice(&v1.to_be_bytes());
-                    let _v2 = if *v2 { 0xff } else { 0x00 };
-                    op_bytes.push(_v2);
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode : 8*/
-                Operator::CONST_S(v1, v2) => {
-                    let mut op_bytes: Vec<u8> = vec![0x08];
-                    op_bytes.extend_from_slice(&v1.to_be_bytes());
-                    let sbytes = &*str_op_value_bytes(&v2);
-                    op_bytes.extend_from_slice(sbytes);
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode : 9*/
-                Operator::LOAD_CONST(v) => {
-                    //0x09
-                    let mut op_bytes: Vec<u8> = vec![0x09];
-                    op_bytes.extend_from_slice(&v.to_be_bytes());
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode :10*/
-                Operator::POP => {
-                    //0x0a
-                    val.push(0x0a);
-                }
-                /*opcode :11*/
-                Operator::ALLOC(v1, v2) => {
-                    let mut op_bytes: Vec<u8> = vec![0x0B];
-                    op_bytes.extend_from_slice(&v1.to_be_bytes());
-                    op_bytes.extend_from_slice(&v2.to_be_bytes());
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode :12*/
-                Operator::DEALLOC(v) => {
-                    let mut op_bytes: Vec<u8> = vec![0x0C];
-                    op_bytes.extend_from_slice(&v.to_be_bytes());
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode :13*/
-                Operator::POPS(v) => {
-                    let mut op_bytes: Vec<u8> = vec![0x0D];
-                    op_bytes.extend_from_slice(&v.to_be_bytes());
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode :14*/
-                Operator::GETLEN(v) => {
-                    let mut op_bytes: Vec<u8> = vec![0x0E];
-                    op_bytes.extend_from_slice(&v.to_be_bytes());
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode :15*/
-                Operator::JMP(v) => {
-                    let mut op_bytes: Vec<u8> = vec![0x0F];
-                    op_bytes.extend_from_slice(&*str_op_value_bytes(&v));
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode :16*/
-                Operator::JMPo(v) => {
-                    let mut op_bytes: Vec<u8> = vec![0x10];
-                    op_bytes.extend_from_slice(&*str_op_value_bytes(&v));
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode :17*/
-                Operator::JMPe(v) => {
-                    let mut op_bytes: Vec<u8> = vec![0x11];
-                    op_bytes.extend_from_slice(&*str_op_value_bytes(&v));
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode :18*/
-                Operator::JMPne(v) => {
-                    let mut op_bytes: Vec<u8> = vec![0x12];
-                    op_bytes.extend_from_slice(&*str_op_value_bytes(&v));
-
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode :19*/
-                Operator::JMPs(v1, v2) => {
-                    let mut op_bytes: Vec<u8> = vec![0x13];
-                    op_bytes.extend_from_slice(&*str_op_value_bytes(&v1));
-                    op_bytes.extend_from_slice(&*str_op_value_bytes(&v2));
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode :20*/
-                Operator::JMP_DEF(v1, v2) => {
-                    let mut op_bytes: Vec<u8> = vec![0x14];
-                    op_bytes.extend_from_slice(&*str_op_value_bytes(&v1));
-                    op_bytes.extend_from_slice(&v2.to_be_bytes());
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode :21*/
-                Operator::LABEL(v) => {
-                    let mut op_bytes: Vec<u8> = vec![0x15];
-                    let sbytes = &*str_op_value_bytes(&v);
-                    op_bytes.extend_from_slice(sbytes);
-
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode :22*/
-                Operator::SYSCALL(v1, v2) => {
-                    let mut op_bytes: Vec<u8> = vec![0x16];
-                    op_bytes.extend_from_slice(&v1.to_be_bytes());
-                    op_bytes.extend_from_slice(&v2.to_be_bytes());
-
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode :23*/
-                Operator::SYSCALLD(v) => {
-                    let mut op_bytes: Vec<u8> = vec![0x17];
-                    op_bytes.extend_from_slice(&v.to_be_bytes());
-
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode :24*/
-                Operator::EXCEPT_THROW => {
-                    val.push(0x18);
-                }
-                /*opcode :25*/
-                Operator::EXCEPT_CATCH(v) => {
-                    let mut op_bytes: Vec<u8> = vec![0x19];
-                    op_bytes.extend_from_slice(&*str_op_value_bytes(&v));
-
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode :26*/
-                Operator::RET => {
-                    val.push(0x1A);
-                }
-                /*opcode :27*/
-                Operator::EMIT => {
-                    val.push(0x1b);
-                }
-                /*opcode :28*/
-                Operator::EMITS(v) => {
-                    let mut op_bytes: Vec<u8> = vec![0x1C];
-                    op_bytes.extend_from_slice(&v.to_be_bytes());
-
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode :29*/
-                Operator::EMITW(v) => {
-                    let mut op_bytes: Vec<u8> = vec![0x1D];
-                    op_bytes.extend_from_slice(&v.to_be_bytes());
-
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode :30*/
-                Operator::EMITD(v) => {
-                    let mut op_bytes: Vec<u8> = vec![0x1E];
-                    op_bytes.extend_from_slice(&v.to_be_bytes())
-                }
-                /*opcode :31*/
-                Operator::GETBYTELEN(v) => {
-                    let mut op_bytes: Vec<u8> = vec![0x1F];
-                    op_bytes.extend_from_slice(&v.to_be_bytes());
-
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode :32*/
-                Operator::GETBYTE(v1, v2) => {
-                    let mut op_bytes: Vec<u8> = vec![0x20];
-                    op_bytes.extend_from_slice(&v1.to_be_bytes());
-                    op_bytes.extend_from_slice(&v2.to_be_bytes());
-
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode :33*/
-                Operator::GETWORD(v1, v2) => {
-                    let mut op_bytes: Vec<u8> = vec![0x21];
-                    op_bytes.extend_from_slice(&v1.to_be_bytes());
-                    op_bytes.extend_from_slice(&v2.to_be_bytes());
-
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode :34*/
-                Operator::SETBYTE(v1, v2, v3) => {
-                    let mut op_bytes: Vec<u8> = vec![0x22];
-                    op_bytes.extend_from_slice(&v1.to_be_bytes());
-                    op_bytes.extend_from_slice(&v2.to_be_bytes());
-                    op_bytes.push(*v3);
-
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode :35*/
-                Operator::SETWORD(v1, v2, v3) => {
-                    let mut op_bytes: Vec<u8> = vec![0x23];
-                    op_bytes.extend_from_slice(&v1.to_be_bytes());
-                    op_bytes.extend_from_slice(&v2.to_be_bytes());
-                    op_bytes.extend_from_slice(&v3.to_be_bytes());
-
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode :36*/
-                Operator::DUPO(v) => {
-                    let mut op_bytes: Vec<u8> = vec![0x24];
-                    op_bytes.extend_from_slice(&v.to_be_bytes());
-                    val.extend_from_slice(&op_bytes);
-                }
-                /*opcode :37*/ Operator::DUP => val.push(0x25),
-                /*opcode :38*/ Operator::SWAP => val.push(0x26),
-                /*opcode :39*/ Operator::ADDu => val.push(0x27),
-                /*opcode :40*/ Operator::ADDi => val.push(0x28),
-                /*opcode :41*/ Operator::ADDfi => val.push(0x29),
-                /*opcode :42*/ Operator::ADDif => val.push(0x2A),
-                /*opcode :43*/ Operator::ADDf => val.push(0x2B),
-                /*opcode :44*/ Operator::SUBu => val.push(0x2C),
-                /*opcode :45*/ Operator::SUBi => val.push(0x2D),
-                /*opcode :46*/ Operator::SUBfi => val.push(0x2E),
-                /*opcode :47*/ Operator::SUBif => val.push(0x2F),
-                /*opcode :48*/ Operator::SUBf => val.push(0x30),
-                /*opcode :49*/ Operator::MULu => val.push(0x31),
-                /*opcode :50*/ Operator::MULi => val.push(0x32),
-                /*opcode :51*/ Operator::MULfi => val.push(0x33),
-                /*opcode :52*/ Operator::MULif => val.push(0x34),
-                /*opcode :53*/ Operator::MULf => val.push(0x35),
-                /*opcode :54*/ Operator::DIVu => val.push(0x36),
-                /*opcode :55*/ Operator::DIVi => val.push(0x37),
-                /*opcode :56*/ Operator::DIVfi => val.push(0x38),
-                /*opcode :57*/ Operator::DIVif => val.push(0x39),
-                /*opcode :58*/ Operator::DIVf => val.push(0x3A),
-                /*opcode :59*/ Operator::MODu => val.push(0x3B),
-                /*opcode :60*/ Operator::MODi => val.push(0x3C),
-                /*opcode :61*/ Operator::MODfi => val.push(0x3D),
-                /*opcode :62*/ Operator::MODif => val.push(0x3E),
-                /*opcode :63*/ Operator::MODf => val.push(0x3F),
-                /*opcode :64*/ Operator::ROR => val.push(0x40),
-                /*opcode :65*/ Operator::ROL => val.push(0x41),
-                /*opcode :66*/ Operator::LSR => val.push(0x42),
-                /*opcode :67*/ Operator::ASR => val.push(0x43),
-                /*opcode :68*/ Operator::LSL => val.push(0x44),
-                /*opcode :69*/ Operator::ASL => val.push(0x45),
-                /*opcode :70*/ Operator::NEG => val.push(0x46),
-                /*opcode :71*/ Operator::AND => val.push(0x47),
-                /*opcode :72*/ Operator::XOR => val.push(0x48),
-                /*opcode :73*/ Operator::NAND => val.push(0x49),
-                /*opcode :74*/ Operator::CNT => val.push(0x4A),
-                /*opcode :75*/ Operator::CMP => val.push(0x4B),
-                /*opcode :76*/ Operator::JMP_SCAN => val.push(0x4C),
-                /*opcode :77*/ Operator::OR => {
-                    val.push(0x4D);
-                }
-                /*opcode :78*/ Operator::NOR => {
-                    val.push(0x4E);
-                }
-            }
+            val.extend(get_operation_bytes(operation))
         }
 
         return val;
+    }
+
+    fn get_operation_bytes(operation: &Operator) -> Vec<u8> {
+        let mut val: Vec<u8> = Vec::new();
+        match operation {
+            /*opcode : 1*/
+            Operator::PUSH(v) => {
+                let mut op_bytes: Vec<u8> = vec![0x01];
+                op_bytes.extend_from_slice(&v.to_be_bytes());
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode : 2*/
+            Operator::LOAD(v) => {
+                let mut op_bytes: Vec<u8> = vec![0x02];
+                op_bytes.extend_from_slice(&v.to_be_bytes());
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode : 3*/
+            Operator::LOADD(v_) => {
+                let mut op_bytes: Vec<u8> = vec![0x03];
+                op_bytes.extend_from_slice(&v_.to_be_bytes());
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode : 4*/
+            Operator::CONST_U(v1, v2) => {
+                let mut op_bytes: Vec<u8> = vec![0x04];
+                op_bytes.extend_from_slice(&v1.to_be_bytes());
+                op_bytes.extend_from_slice(&v2.to_be_bytes());
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode : 5*/
+            Operator::CONST_F(v1, v2) => {
+                let mut op_bytes: Vec<u8> = vec![0x05];
+                op_bytes.extend_from_slice(&v1.to_be_bytes());
+                op_bytes.extend_from_slice(&v2.to_be_bytes());
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode : 6*/
+            Operator::CONST_I(v1, v2) => {
+                let mut op_bytes: Vec<u8> = vec![0x06];
+                op_bytes.extend_from_slice(&v1.to_be_bytes());
+                op_bytes.extend_from_slice(&v2.to_be_bytes());
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode : 7*/
+            Operator::CONST_B(v1, v2) => {
+                let mut op_bytes: Vec<u8> = vec![0x07];
+                op_bytes.extend_from_slice(&v1.to_be_bytes());
+                let _v2 = if *v2 { 0xff } else { 0x00 };
+                op_bytes.push(_v2);
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode : 8*/
+            Operator::CONST_S(v1, v2) => {
+                let mut op_bytes: Vec<u8> = vec![0x08];
+                op_bytes.extend_from_slice(&v1.to_be_bytes());
+                let sbytes = &*str_op_value_bytes(&v2);
+                op_bytes.extend_from_slice(sbytes);
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode : 9*/
+            Operator::LOAD_CONST(v) => {
+                //0x09
+                let mut op_bytes: Vec<u8> = vec![0x09];
+                op_bytes.extend_from_slice(&v.to_be_bytes());
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode :10*/
+            Operator::POP => {
+                //0x0a
+                val.push(0x0a);
+            }
+            /*opcode :11*/
+            Operator::ALLOC(v1, v2) => {
+                let mut op_bytes: Vec<u8> = vec![0x0B];
+                op_bytes.extend_from_slice(&v1.to_be_bytes());
+                op_bytes.extend_from_slice(&v2.to_be_bytes());
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode :12*/
+            Operator::DEALLOC(v) => {
+                let mut op_bytes: Vec<u8> = vec![0x0C];
+                op_bytes.extend_from_slice(&v.to_be_bytes());
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode :13*/
+            Operator::POPS(v) => {
+                let mut op_bytes: Vec<u8> = vec![0x0D];
+                op_bytes.extend_from_slice(&v.to_be_bytes());
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode :14*/
+            Operator::GETLEN(v) => {
+                let mut op_bytes: Vec<u8> = vec![0x0E];
+                op_bytes.extend_from_slice(&v.to_be_bytes());
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode :15*/
+            Operator::JMP(v) => {
+                let mut op_bytes: Vec<u8> = vec![0x0F];
+                op_bytes.extend_from_slice(&*str_op_value_bytes(&v));
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode :16*/
+            Operator::JMPo(v) => {
+                let mut op_bytes: Vec<u8> = vec![0x10];
+                op_bytes.extend_from_slice(&*str_op_value_bytes(&v));
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode :17*/
+            Operator::JMPe(v) => {
+                let mut op_bytes: Vec<u8> = vec![0x11];
+                op_bytes.extend_from_slice(&*str_op_value_bytes(&v));
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode :18*/
+            Operator::JMPne(v) => {
+                let mut op_bytes: Vec<u8> = vec![0x12];
+                op_bytes.extend_from_slice(&*str_op_value_bytes(&v));
+
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode :19*/
+            Operator::JMPs(v1, v2) => {
+                let mut op_bytes: Vec<u8> = vec![0x13];
+                op_bytes.extend_from_slice(&*str_op_value_bytes(&v1));
+                op_bytes.extend_from_slice(&*str_op_value_bytes(&v2));
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode :20*/
+            Operator::JMP_DEF(v1, v2) => {
+                let mut op_bytes: Vec<u8> = vec![0x14];
+                op_bytes.extend_from_slice(&*str_op_value_bytes(&v1));
+                op_bytes.extend_from_slice(&v2.to_be_bytes());
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode :21*/
+            Operator::LABEL(v) => {
+                let mut op_bytes: Vec<u8> = vec![0x15];
+                let sbytes = &*str_op_value_bytes(&v);
+                op_bytes.extend_from_slice(sbytes);
+
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode :22*/
+            Operator::SYSCALL(v1, v2) => {
+                let mut op_bytes: Vec<u8> = vec![0x16];
+                op_bytes.extend_from_slice(&v1.to_be_bytes());
+                op_bytes.extend_from_slice(&v2.to_be_bytes());
+
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode :23*/
+            Operator::SYSCALLD(v) => {
+                let mut op_bytes: Vec<u8> = vec![0x17];
+                op_bytes.extend_from_slice(&v.to_be_bytes());
+
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode :24*/
+            Operator::EXCEPT_THROW => {
+                val.push(0x18);
+            }
+            /*opcode :25*/
+            Operator::EXCEPT_CATCH(v) => {
+                let mut op_bytes: Vec<u8> = vec![0x19];
+                op_bytes.extend_from_slice(&*str_op_value_bytes(&v));
+
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode :26*/
+            Operator::RET => {
+                val.push(0x1A);
+            }
+            /*opcode :27*/
+            Operator::EMIT => {
+                val.push(0x1b);
+            }
+            /*opcode :28*/
+            Operator::EMITS(v) => {
+                let mut op_bytes: Vec<u8> = vec![0x1C];
+                op_bytes.extend_from_slice(&v.to_be_bytes());
+
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode :29*/
+            Operator::EMITW(v) => {
+                let mut op_bytes: Vec<u8> = vec![0x1D];
+                op_bytes.extend_from_slice(&v.to_be_bytes());
+
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode :30*/
+            Operator::EMITD(v) => {
+                let mut op_bytes: Vec<u8> = vec![0x1E];
+                op_bytes.extend_from_slice(&v.to_be_bytes())
+            }
+            /*opcode :31*/
+            Operator::GETBYTELEN(v) => {
+                let mut op_bytes: Vec<u8> = vec![0x1F];
+                op_bytes.extend_from_slice(&v.to_be_bytes());
+
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode :32*/
+            Operator::GETBYTE(v1, v2) => {
+                let mut op_bytes: Vec<u8> = vec![0x20];
+                op_bytes.extend_from_slice(&v1.to_be_bytes());
+                op_bytes.extend_from_slice(&v2.to_be_bytes());
+
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode :33*/
+            Operator::GETWORD(v1, v2) => {
+                let mut op_bytes: Vec<u8> = vec![0x21];
+                op_bytes.extend_from_slice(&v1.to_be_bytes());
+                op_bytes.extend_from_slice(&v2.to_be_bytes());
+
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode :34*/
+            Operator::SETBYTE(v1, v2, v3) => {
+                let mut op_bytes: Vec<u8> = vec![0x22];
+                op_bytes.extend_from_slice(&v1.to_be_bytes());
+                op_bytes.extend_from_slice(&v2.to_be_bytes());
+                op_bytes.push(*v3);
+
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode :35*/
+            Operator::SETWORD(v1, v2, v3) => {
+                let mut op_bytes: Vec<u8> = vec![0x23];
+                op_bytes.extend_from_slice(&v1.to_be_bytes());
+                op_bytes.extend_from_slice(&v2.to_be_bytes());
+                op_bytes.extend_from_slice(&v3.to_be_bytes());
+
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode :36*/
+            Operator::DUPO(v) => {
+                let mut op_bytes: Vec<u8> = vec![0x24];
+                op_bytes.extend_from_slice(&v.to_be_bytes());
+                val.extend_from_slice(&op_bytes);
+            }
+            /*opcode :37*/ Operator::DUP => val.push(0x25),
+            /*opcode :38*/ Operator::SWAP => val.push(0x26),
+            /*opcode :39*/ Operator::ADDu => val.push(0x27),
+            /*opcode :40*/ Operator::ADDi => val.push(0x28),
+            /*opcode :41*/ Operator::ADDfi => val.push(0x29),
+            /*opcode :42*/ Operator::ADDif => val.push(0x2A),
+            /*opcode :43*/ Operator::ADDf => val.push(0x2B),
+            /*opcode :44*/ Operator::SUBu => val.push(0x2C),
+            /*opcode :45*/ Operator::SUBi => val.push(0x2D),
+            /*opcode :46*/ Operator::SUBfi => val.push(0x2E),
+            /*opcode :47*/ Operator::SUBif => val.push(0x2F),
+            /*opcode :48*/ Operator::SUBf => val.push(0x30),
+            /*opcode :49*/ Operator::MULu => val.push(0x31),
+            /*opcode :50*/ Operator::MULi => val.push(0x32),
+            /*opcode :51*/ Operator::MULfi => val.push(0x33),
+            /*opcode :52*/ Operator::MULif => val.push(0x34),
+            /*opcode :53*/ Operator::MULf => val.push(0x35),
+            /*opcode :54*/ Operator::DIVu => val.push(0x36),
+            /*opcode :55*/ Operator::DIVi => val.push(0x37),
+            /*opcode :56*/ Operator::DIVfi => val.push(0x38),
+            /*opcode :57*/ Operator::DIVif => val.push(0x39),
+            /*opcode :58*/ Operator::DIVf => val.push(0x3A),
+            /*opcode :59*/ Operator::MODu => val.push(0x3B),
+            /*opcode :60*/ Operator::MODi => val.push(0x3C),
+            /*opcode :61*/ Operator::MODfi => val.push(0x3D),
+            /*opcode :62*/ Operator::MODif => val.push(0x3E),
+            /*opcode :63*/ Operator::MODf => val.push(0x3F),
+            /*opcode :64*/ Operator::ROR => val.push(0x40),
+            /*opcode :65*/ Operator::ROL => val.push(0x41),
+            /*opcode :66*/ Operator::LSR => val.push(0x42),
+            /*opcode :67*/ Operator::ASR => val.push(0x43),
+            /*opcode :68*/ Operator::LSL => val.push(0x44),
+            /*opcode :69*/ Operator::ASL => val.push(0x45),
+            /*opcode :70*/ Operator::NEG => val.push(0x46),
+            /*opcode :71*/ Operator::AND => val.push(0x47),
+            /*opcode :72*/ Operator::XOR => val.push(0x48),
+            /*opcode :73*/ Operator::NAND => val.push(0x49),
+            /*opcode :74*/ Operator::CNT => val.push(0x4A),
+            /*opcode :75*/ Operator::CMP => val.push(0x4B),
+            /*opcode :76*/ Operator::JMP_SCAN => val.push(0x4C),
+            /*opcode :77*/ Operator::OR => {
+                val.push(0x4D);
+            }
+            /*opcode :78*/ Operator::NOR => {
+                val.push(0x4E);
+            }
+            /* opcode: 79*/ Operator::DJMP => {
+                val.push(0x4F);
+            }
+            /* opcode: 80*/ Operator::DJMPe => {
+                val.push(0x50);
+            }
+            /* opcode: 81*/ Operator::DJMPne => {
+                val.push(0x51);
+            }
+            /* opcode: 82*/ Operator::DALLOC(v) => {
+                let mut op_bytes: Vec<u8> = vec![0x52];
+                op_bytes.extend_from_slice(&v.to_be_bytes());
+
+                val.extend_from_slice(&op_bytes);
+            }
+            /* opcode: 83*/ Operator::LIBLOAD(v2) => {
+                let mut op_bytes: Vec<u8> = vec![0x53];
+                let sbytes = &*str_op_value_bytes(&v2);
+                op_bytes.extend_from_slice(sbytes);
+                val.extend_from_slice(&op_bytes);
+            }
+            /* opcode: 84*/ Operator::DLIBLOAD => {
+                val.push(0x54);
+            }
+            /* opcode: 85*/ Operator::LIBCALL(v1, v2) => {
+                let mut op_bytes: Vec<u8> = vec![0x55];
+                op_bytes.extend_from_slice(&*str_op_value_bytes(&v1));
+                op_bytes.extend_from_slice(&*str_op_value_bytes(&v2));
+                val.extend_from_slice(&op_bytes);
+            }
+            /* opcode: 86*/ Operator::DLIBCALL(v1) => {
+                let mut op_bytes = vec![0x56];
+                op_bytes.extend_from_slice(&*str_op_value_bytes(&v1));
+                val.extend_from_slice(&op_bytes);
+            }
+            /* opcode: 87*/ Operator::LIBDCALL(v1) => {
+                let mut op_bytes = vec![0x57];
+                op_bytes.extend_from_slice(&*str_op_value_bytes(&v1));
+                val.extend_from_slice(&op_bytes);
+            }
+            /* opcode: 88*/ Operator::DLIBDCALL => {
+                val.push(0x58);
+            }
+        }
+
+        val
     }
 
     pub fn str_op_value_bytes(val: &String) -> Vec<u8> {
@@ -321,23 +381,58 @@ pub mod assembler {
         file.flush().unwrap();
     }
 
-    pub fn parse_binary(program_binary: Vec<u8>) -> Vec<Operator> {
+    pub fn parse_binary(program_binary: Vec<u8>) -> (Vec<Operator>, String) {
+        let mut namespace:String = "".to_string();
         let mut operations: Vec<Operator> = Vec::new();
         let n_bytes = program_binary.len();
         //check for magic_bytes at start
         let magic_bytes: [u8; 4] = 0xDEADFACE_u32.to_be_bytes();
-        for i in 0..4 {
-            if magic_bytes[i] != program_binary[i] {
-                panic!("magic_bytes not found at start of program_binary");
-            }
+        let library_bytes: [u8; 4] = 0xDEADC0DE_u32.to_be_bytes();
+
+        let is_library:bool;
+
+        //check that the file starts with either magic or library bytes
+
+        if program_binary[0..4] == magic_bytes {
+            is_library = false;
+        } else if program_binary[0..4] == library_bytes {
+            is_library = true;
+        } else {
+            panic!("File does not start with magic or library bytes");
         }
+
+        // for i in 0..4 {
+        //     if magic_bytes[i] != program_binary[i] {
+        //         panic!("magic_bytes not found at start of program_binary");
+        //     }
+        // }
+
+        let mut namespace_extracted = false;
+
 
         let mut i = 4;
         for _ in 4..n_bytes - 1 {
             if i >= n_bytes {
                 break;
             }
+
             let byte = program_binary[i];
+
+            if is_library && !namespace_extracted {
+                i-=1;
+                let (usize_value, bytes_read) = read_next_usize(&program_binary, i);
+                i += bytes_read;
+
+                let (string, bytes_read_2) =
+                    read_next_string(&program_binary, i, usize_value);
+                i += bytes_read_2;
+
+                namespace = string.clone();
+                i+=1;
+                namespace_extracted=true;
+                continue
+            }
+
 
             match byte {
                 0x01 => {
@@ -708,15 +803,68 @@ pub mod assembler {
                 0x4E => {
                     operations.push(Operator::NOR);
                 }
+                0x4F => {
+                    operations.push(Operator::DJMP);
+                }
+                0x50 => {
+                    operations.push(Operator::DJMPe);
+                }
+                0x51 => {
+                    operations.push(Operator::DJMPne);
+                }
+                0x52 => {
+                    let (usize_val, str_len_read) = read_next_usize(&program_binary, i);
+                    i += str_len_read;
+                    operations.push(Operator::DALLOC(usize_val));
+                }
+                0x53 => {
+                    let (string_length, str_len_read) = read_next_usize(&program_binary, i);
+                    i += str_len_read;
+                    let (string, bytes_read_2) =
+                        read_next_string(&program_binary, i, string_length);
+                    i += bytes_read_2;
+                    operations.push(Operator::LIBLOAD(string));
+                }
+                0x54 => {
+                    operations.push(Operator::DLIBLOAD);
+                }
+                0x55 => {
+                    let (string_length, str_len_read) = read_next_usize(&program_binary, i);
+                    i += str_len_read;
+                    let (string, bytes_read_2) =
+                        read_next_string(&program_binary, i, string_length);
+                    i += bytes_read_2;
+
+                    let (string_length2, str_len_read2) = read_next_usize(&program_binary, i);
+                    i += str_len_read2;
+                    let (string2, bytes_read_22) =
+                        read_next_string(&program_binary, i, string_length2);
+                    i += bytes_read_22;
+                    operations.push(Operator::LIBCALL(string,string2));
+                }
+                0x56 => {
+                    let (string_length, str_len_read) = read_next_usize(&program_binary, i);
+                    i += str_len_read;
+                    let (string, bytes_read_2) =
+                        read_next_string(&program_binary, i, string_length);
+                    i += bytes_read_2;
+                    operations.push(Operator::DLIBCALL(string));
+                }
+                0x57 => {
+                    operations.push(Operator::DLIBDCALL);
+                }
+                0x58 => {
+                    operations.push(Operator::DLIBDCALL);
+                }
                 _ => {
-                    panic!("Unknown opcode: {}", byte);
+                    panic!("Unknown opcode: {} at byte {}", byte,i);
                 }
             }
 
             i += 1;
         }
 
-        operations
+        (operations,namespace.to_string())
     }
 
     fn read_next_usize(program_binary: &Vec<u8>, i: usize) -> (usize, usize) {

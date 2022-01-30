@@ -2,7 +2,7 @@ pub mod asm_parser {
     use crate::stalfos::ops::Operator;
     use std::str::FromStr;
 
-    pub fn parse_string(string: String) -> Vec<Operator> {
+    pub fn parse_string(string: String) -> (String,Vec<Operator>) {
         //read character at a time, creating a new string each time to parse until eol or comment
         let mut current_line = String::new();
         // let mut current_op = Operator::new/();
@@ -25,12 +25,12 @@ pub mod asm_parser {
                     next = string.chars().nth(i).unwrap();
                     if next == '\r'
                         && (string.chars().nth(i + 1).is_some()
-                            && string.chars().nth(i + 1).unwrap() == '\n')
+                        && string.chars().nth(i + 1).unwrap() == '\n')
                     {
                         i += 1;
                     } else if next == '\n'
                         && (string.chars().nth(i + 1).is_some()
-                            && string.chars().nth(i + 1).unwrap() == '\r')
+                        && string.chars().nth(i + 1).unwrap() == '\r')
                     {
                         i += 1;
                     }
@@ -48,12 +48,12 @@ pub mod asm_parser {
                 if valid
                     && _next.unwrap() == '\r'
                     && (string.chars().nth(i + 1).is_some()
-                        && string.chars().nth(i + 1).unwrap() == '\n')
+                    && string.chars().nth(i + 1).unwrap() == '\n')
                 {
                     i += 1;
                 } else if next == '\n'
                     && (string.chars().nth(i + 1).is_some()
-                        && string.chars().nth(i + 1).unwrap() == '\r')
+                    && string.chars().nth(i + 1).unwrap() == '\r')
                 {
                     i += 1;
                 }
@@ -95,11 +95,28 @@ pub mod asm_parser {
             }
         }
 
+        //check first line for NS declaration
+        let mut ns_declaration = false;
+        let first_line = lines.get(0).unwrap().clone();
+        let mut ns_name = "";
+        if first_line.starts_with("#<") && first_line.ends_with(">") {
+            ns_declaration=true;
+            ns_name = first_line.split("#<").collect::<Vec<&str>>()[1].split(">").collect::<Vec<&str>>()[0];
+        }
+
+        let mut is_first_line = true;
         for line in lines {
+            if is_first_line {
+                is_first_line = false;
+                if ns_declaration {
+                    continue;
+                }
+            }
+
             ops.push(get_operation_from_line(line));
         }
 
-        return ops;
+        return (ns_name.to_string(),ops);
     }
 
     fn get_operation_from_line(line: String) -> Operator {
@@ -215,45 +232,45 @@ pub mod asm_parser {
             "SWAP" => {
                 return Operator::SWAP;
             }
-            "ADDu" => Operator::ADDu,
-            "ADDi" => Operator::ADDi,
-            "ADDfi" => Operator::ADDfi,
-            "ADDif" => Operator::ADDif,
-            "ADDf" => Operator::ADDf,
-            "SUBu" => Operator::SUBu,
-            "SUBi" => Operator::SUBi,
-            "SUBfi" => Operator::SUBfi,
-            "SUBif" => Operator::SUBif,
-            "SUBf" => Operator::SUBf,
-            "MULu" => Operator::MULu,
-            "MULi" => Operator::MULi,
-            "MULfi" => Operator::MULfi,
-            "MULif" => Operator::MULif,
-            "MULf" => Operator::MULf,
-            "DIVu" => Operator::DIVu,
-            "DIVi" => Operator::DIVi,
-            "DIVfi" => Operator::DIVfi,
-            "DIVif" => Operator::DIVif,
-            "DIVf" => Operator::DIVf,
-            "MODu" => Operator::MODu,
-            "MODi" => Operator::MODi,
-            "MODfi" => Operator::MODfi,
-            "MODif" => Operator::MODif,
-            "MODf" => Operator::MODf,
-            "ROR" => Operator::ROR,
-            "ROL" => Operator::ROL,
-            "LSR" => Operator::LSR,
-            "ASR" => Operator::ASR,
-            "LSL" => Operator::LSL,
-            "ASL" => Operator::ASL,
-            "NEG" => Operator::NEG,
-            "AND" => Operator::AND,
-            "OR" => Operator::OR,
-            "NOR" => Operator::NOR,
-            "XOR" => Operator::XOR,
-            "NAND" => Operator::NAND,
-            "CNT" => Operator::CNT,
-            "CMP" => Operator::CMP,
+            "ADDu" => return Operator::ADDu,
+            "ADDi" => return Operator::ADDi,
+            "ADDfi" => return Operator::ADDfi,
+            "ADDif" => return Operator::ADDif,
+            "ADDf" => return Operator::ADDf,
+            "SUBu" => return Operator::SUBu,
+            "SUBi" => return Operator::SUBi,
+            "SUBfi" => return Operator::SUBfi,
+            "SUBif" => return Operator::SUBif,
+            "SUBf" => return Operator::SUBf,
+            "MULu" => return Operator::MULu,
+            "MULi" => return Operator::MULi,
+            "MULfi" => return Operator::MULfi,
+            "MULif" => return Operator::MULif,
+            "MULf" => return Operator::MULf,
+            "DIVu" => return Operator::DIVu,
+            "DIVi" => return Operator::DIVi,
+            "DIVfi" => return Operator::DIVfi,
+            "DIVif" => return Operator::DIVif,
+            "DIVf" => return Operator::DIVf,
+            "MODu" => return Operator::MODu,
+            "MODi" => return Operator::MODi,
+            "MODfi" => return Operator::MODfi,
+            "MODif" => return Operator::MODif,
+            "MODf" => return Operator::MODf,
+            "ROR" => return Operator::ROR,
+            "ROL" => return Operator::ROL,
+            "LSR" => return Operator::LSR,
+            "ASR" => return Operator::ASR,
+            "LSL" => return Operator::LSL,
+            "ASL" => return Operator::ASL,
+            "NEG" => return Operator::NEG,
+            "AND" => return Operator::AND,
+            "OR" => return Operator::OR,
+            "NOR" => return Operator::NOR,
+            "XOR" => return Operator::XOR,
+            "NAND" => return Operator::NAND,
+            "CNT" => return Operator::CNT,
+            "CMP" => return Operator::CMP,
             "JMP" => {
                 return Operator::JMP(clean_string(segments.get(1).unwrap().clone()));
             }
@@ -310,6 +327,43 @@ pub mod asm_parser {
             }
             "EMITD" => {
                 return Operator::EMITD(str_to_usize(&*segments.get(1).unwrap()));
+            }
+            "DJMP" => {
+                return Operator::DJMP;
+            }
+            "DJMPe" => {
+                return Operator::DJMPe;
+            }
+            "DJMPne" => {
+                return Operator::DJMPne;
+            }
+            "DALLOC" => {
+                return Operator::DALLOC(str_to_usize(&*segments.get(1).unwrap()));
+            }
+            "LIBLOAD" => {
+                return Operator::LIBLOAD(clean_string(segments.get(1).unwrap().clone()));
+            }
+            "DLIBLOAD" => {
+                return Operator::DLIBLOAD;
+            }
+            "LIBCALL" => {
+                return Operator::LIBCALL(
+                    clean_string(segments.get(1).unwrap().clone()),
+                    clean_string(segments.get(2).unwrap().clone())
+                );
+            }
+            "DLIBCALL" => {
+                return Operator::DLIBCALL(
+                    clean_string(segments.get(1).unwrap().clone()),
+                );
+            }
+            "LIBDCALL" => {
+                return Operator::LIBDCALL(
+                    clean_string(segments.get(1).unwrap().clone()),
+                );
+            }
+            "DLIBDCALL" => {
+                return Operator::DLIBDCALL;
             }
             &_ => {
                 if first_segment.starts_with(".") {

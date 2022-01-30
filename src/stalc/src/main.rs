@@ -43,13 +43,13 @@ fn main() {
     let mut file = File::open(infile).expect("file not found");
     file.read_to_string(&mut input).expect("something went wrong reading the file");
 
+    let (ns,ops) = parse_string(input);
 
-    let ops = parse_string(input);
-    let binary = assembler::assemble(ops.borrow());
+    let binary = assembler::assemble(ops.borrow(),ns.clone());
 
     if check {
-        let new_ops =assembler::parse_binary(binary.clone());
-        let new_binary = assembler::assemble(new_ops.borrow());
+        let (new_ops,_) =assembler::parse_binary(binary.clone());
+        let new_binary = assembler::assemble(new_ops.borrow(),ns.clone());
         if binary != new_binary {
             println!("{:?}", binary);
             println!("{:?}", new_binary);

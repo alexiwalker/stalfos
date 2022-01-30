@@ -1,5 +1,17 @@
 pub mod ops {
-    #[allow(non_camel_case_types)]
+    #[allow(non_camel_case_types)] #[derive(Debug, Clone)]
+    ///
+    /// Each Operator added here must be also added in the following places:
+    /// op_calls.rs :: the functionality of each op
+    /// assembler.rs :: read the 8bit opcode and parse the appropriate number of following bytes to create the operator
+    /// assembler.rs :: turns the operator into a bytecode stream
+    /// asm_parser.rs :: turn the opcodes utf8 name (eg ADD) into the opcode enum (eg Opcode::ADD)
+    ///
+    /// op_calls can be a noop if it is a special case or NYI
+    /// assembler and asm_parser MUST be implemented or you will be unable to :
+    ///     - compile a program from a .tsa file
+    ///     - run a program from a .tsf file
+    ///
     pub enum Operator {
         //Core operators: push and pop onto / off of stack
         PUSH(u32),
@@ -113,5 +125,21 @@ pub mod ops {
         EMITS(usize), //emit a string to the output stream
         EMITW(usize), //emit a word to the output stream
         EMITD(usize), //emits an unknown number of words to the output stream. The number of words is the top value on the stack.
+
+        DJMP, // pop 2 values off stack and read as jump pointer. jump to that location.
+        DJMPe, // pop 2 values off stack, compare. pop 2 values off stack and read as jump pointer. jump if equal
+        DJMPne, // pop 2 values off stack, compare, pop 2 values off stack and read as jump pointer., jump if not equal
+
+        DALLOC(usize), // pop 1 value off stack, allocate that many words on the stack. 2 words are pushed onto the stack. This is the pointer to the allocated memory.
+        // DGETSIZE, // pop 2 values off stack, read as alloc pointer. push 1 word onto stack with the size of the allocated memory.
+        // DLOADVALUE, // pop 2 values off stack, read as alloc pointer. push each word of the allocated memory onto the stack, followed by 1 word for its size
+        // DDEALLOC, // pop 2 values off stack, read as alloc pointer. deallocates the memory.
+
+        LIBLOAD(String), //load a library (omit .stalib extension)
+        DLIBLOAD, //dynamically load a library, pop 1 word, read as number of words, read that many bytes as a string, load library by that string (null bytes at end of decoding are ignored)
+        LIBCALL(String,String), //call a library function
+        DLIBCALL(String), //dynamically call a library function, decode 1 string from stack to get the library name
+        LIBDCALL(String), //dynamically call a library function, decode 1 string from stack to get the function name. argument is library name
+        DLIBDCALL, //dynamically call a library function, decode 2 strings from stack. first is library name, second is function name.
     }
 }

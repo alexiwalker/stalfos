@@ -2,8 +2,22 @@ pub mod op_calls {
     use crate::stalfos::ops::Operator;
     use crate::stalfos::VM;
     use std::borrow::{Borrow, BorrowMut};
+    use std::collections::HashMap;
+    use crate::stal_dll::stal_dll;
+    use crate::stal_dll::stal_dll::{StalDynamicInvocation, StalDynamicLibrary};
 
-    pub fn execute_operation(vm: &mut crate::stalfos::VM) -> bool {
+    pub fn execute_operation(vm: &mut crate::stalfos::VM, loaded_libs:&mut HashMap<String,StalDynamicLibrary>) -> bool {
+
+
+
+        //
+        // if !loaded_libs.contains_key("dyn_helloworld") {
+        //     let path = r"pathhere";
+        //     let lib = stal_dll::load_file_as_library(path,"mynamespace");
+        //     loaded_libs.insert("dyn_helloworld".to_string(), lib);
+        // };
+
+
         let op = vm.program[vm.program_counter].borrow_mut();
         let mut has_changed_ptr = false;
         let mut overflow = false;
@@ -683,6 +697,129 @@ pub mod op_calls {
                 let v2 = vm.stack.pop().unwrap();
                 vm.stack.push(!(v1 | v2));
             }
+            Operator::DJMP => {
+                //pop 2, jump
+                let v1 = vm.stack.pop().unwrap();
+                let v2 = vm.stack.pop().unwrap();
+                let _leftbytes = v1.to_be_bytes();
+                let _rightbytes = v2.to_be_bytes();
+                let _bytes = [_leftbytes[0], _leftbytes[1], _leftbytes[2], _leftbytes[3], _rightbytes[0], _rightbytes[1], _rightbytes[2], _rightbytes[3]];
+                let ptr = usize::from_be_bytes(_bytes);
+                let before = vm.program_counter;
+                vm.program_counter = ptr;
+
+                has_changed_ptr = true;
+                vm.stack_frame_pointers.push((before, vm.program_counter));
+            }
+            Operator::DJMPe => {
+                //pop 2, compare, pop 2, jump if first 2 were equal
+                let l = vm.stack.pop().unwrap();
+                let r = vm.stack.pop().unwrap();
+                let v1 = vm.stack.pop().unwrap();
+                let v2 = vm.stack.pop().unwrap();
+                let _leftbytes = v1.to_be_bytes();
+                let _rightbytes = v2.to_be_bytes();
+                let _bytes = [_leftbytes[0], _leftbytes[1], _leftbytes[2], _leftbytes[3], _rightbytes[0], _rightbytes[1], _rightbytes[2], _rightbytes[3]];
+                let ptr = usize::from_be_bytes(_bytes);
+
+                if (l-r) ==0 {
+                    let before = vm.program_counter;
+                    vm.program_counter = ptr;
+
+                    has_changed_ptr = true;
+                    vm.stack_frame_pointers.push((before, vm.program_counter));
+                }
+            }
+            Operator::DJMPne => {
+                let l = vm.stack.pop().unwrap();
+                let r = vm.stack.pop().unwrap();
+                let v1 = vm.stack.pop().unwrap();
+                let v2 = vm.stack.pop().unwrap();
+                let _leftbytes = v1.to_be_bytes();
+                let _rightbytes = v2.to_be_bytes();
+                let _bytes = [_leftbytes[0], _leftbytes[1], _leftbytes[2], _leftbytes[3], _rightbytes[0], _rightbytes[1], _rightbytes[2], _rightbytes[3]];
+                let ptr = usize::from_be_bytes(_bytes);
+                let cmp = l-r;
+                if cmp != 0 {
+                    let before = vm.program_counter;
+                    vm.program_counter = ptr;
+
+                    has_changed_ptr = true;
+                    vm.stack_frame_pointers.push((before, vm.program_counter));
+                };
+            }
+            Operator::DALLOC(identifier) => {
+                let size = vm.stack.pop().unwrap();
+                let mut allocated_memory_location = 0;
+                {
+                    let mut _s = false;
+                    let table = vm.alloc_table.borrow_mut();
+
+                    //get all keys as a vector
+                    let keys: Vec<usize> = table.keys().map(|x| *x).collect();
+                    let l = keys.len();
+                    for x in 0..l {
+                        // if the current key is not the final one in the allocations, check if the required size fits between current+len and next
+                        if x < l {
+                            let current_pointer = keys.get(x).unwrap();
+                            let next_pointer = keys.get(x + 1).unwrap();
+                            let v = vm.alloc_table[&current_pointer];
+                            let (stack_location, s) = v;
+                            let (next_stack_location, _) = vm.alloc_table[&next_pointer];
+                            if stack_location + s as usize + (size as usize) < next_stack_location {
+                                let allocation = (stack_location, s + size);
+                                let p = *identifier;
+                                vm.alloc_table.insert(p, allocation);
+                                allocated_memory_location = p;
+                                _s = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if !_s {
+                        let end_of_stack = vm.memory.len();
+                        let allocation = (end_of_stack, size);
+                        vm.alloc_table.insert(*identifier, allocation);
+                        for _ in 0..size {
+                            vm.memory.push(0);
+                        }
+
+                        allocated_memory_location = end_of_stack
+                    }
+                }
+
+                for i in 0..size {
+                    vm.memory[allocated_memory_location+i as usize] = 0;
+                }
+            }
+            Operator::LIBLOAD(library) => {
+                if !loaded_libs.contains_key(&*library.clone()) {
+                    let lib =stal_dll::load_library(library);
+                    loaded_libs.insert(library.clone(), lib);
+                }
+            }
+            Operator::DLIBLOAD => {}
+            Operator::LIBCALL(library, label) => {
+                if loaded_libs.contains_key(library) {
+                    let lib = loaded_libs.get(library).unwrap();
+                    let mut invocation = StalDynamicInvocation::new(lib.clone());
+                    let results = invocation.call_func(label.clone(),vm.stack.clone(),loaded_libs);
+                    vm.stack.extend(results);
+                } else {
+                    panic!("Library {} not loaded", library);
+                }
+            }
+            Operator::DLIBCALL(label) => {
+                println!("attempting to call {} but NYI", label);
+                //todo pop size, pop and decode string
+                //load dynamic library, call string label inside library
+            }
+            Operator::LIBDCALL(_library) => {
+                //todo pop size, pop and decode string
+                //load library, call dynamic string inside library
+            }
+            Operator::DLIBDCALL => {}
         }
 
         vm.signal_overflow = overflow;

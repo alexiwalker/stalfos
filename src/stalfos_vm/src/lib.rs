@@ -5,6 +5,7 @@ pub mod assembler;
 pub mod ops;
 
 mod op_calls;
+mod stal_dll;
 
 pub mod stalfos {
     use crate::op_calls;
@@ -12,6 +13,7 @@ pub mod stalfos {
     use crate::ops::ops::Operator;
     use std::borrow::{Borrow, BorrowMut};
     use std::collections::{BTreeMap, HashMap};
+    use crate::stal_dll::stal_dll::StalDynamicLibrary;
 
     pub struct VM {
         pub stack: Vec<u32>,
@@ -25,17 +27,14 @@ pub mod stalfos {
         pub stack_frame_pointers: Vec<(usize, usize)>,
         pub output: Vec<u32>,
 
-        // signals are boolean flags that represent program state and can be observed from the outside
-
-        // checked after each instruction; exits if true
         pub signal_finished: bool,
-
-        // will print extra information if true
         pub signal_debug: bool,
-
-        // if the previous instruction caused an arithmetic overflow, this will be set
         pub signal_overflow: bool,
+
+        pub is_lib:bool,
+
     }
+
 
     impl VM {
         pub fn new() -> VM {
@@ -53,6 +52,7 @@ pub mod stalfos {
                 signal_finished: false,
                 signal_debug: false,
                 signal_overflow: false,
+                is_lib:false,
             }
         }
 
@@ -82,6 +82,7 @@ pub mod stalfos {
                 signal_finished: false,
                 signal_debug: true,
                 signal_overflow: false,
+                is_lib:false,
             }
         }
 
@@ -91,7 +92,7 @@ pub mod stalfos {
 
         pub fn run(&mut self) -> &mut VM {
             loop {
-                if !op_calls::op_calls::execute_operation(self) {
+                if !op_calls::op_calls::execute_operation(self, HashMap::new().borrow_mut()) {
                     self.program_counter += 1;
                 }
 
@@ -105,6 +106,48 @@ pub mod stalfos {
             }
 
             return self;
+        }
+
+        pub fn run_with_libs(&mut self, libs: &mut HashMap<String, StalDynamicLibrary>) -> &mut VM {
+            loop {
+                if !op_calls::op_calls::execute_operation(self, libs) {
+                    self.program_counter += 1;
+                }
+
+                if self.signal_debug {
+                    println!("{}", self.program_counter);
+                }
+
+                if self.signal_finished {
+                    break;
+                }
+            }
+
+            return self;
+        }
+
+
+
+        pub fn run_specific_operation(&mut self, operation_number:usize)->&mut VM{
+            // let mut libL:HashMap<String,StalDynamicLibrary> = ;
+
+            // let libraries = L.borrow_mut();
+
+            let pc_before:usize = self.program_counter;
+            self.program_counter = operation_number;
+            op_calls::op_calls::execute_operation(self,HashMap::new().borrow_mut());
+            self.program_counter = pc_before;
+            self
+        }
+
+        pub fn run_single_operation(&mut self, op:Operator)->&mut VM{
+            let pc_before:usize = self.program_counter;
+            self.program.push(op);
+            self.program_counter = self.program.len()-1;
+            op_calls::op_calls::execute_operation(self, HashMap::new().borrow_mut());
+            self.program.pop();
+            self.program_counter = pc_before;
+            self
         }
 
         pub fn add_op(&mut self, op: ops::Operator) -> &mut VM {
@@ -163,7 +206,10 @@ pub mod stalfos {
                 self.program_counter = self.jmp_table["main"];
                 self.stack_frame_pointers.push((0, self.program_counter))
             } else {
-                panic!("No main function found");
+
+                if !self.is_lib {
+                    panic!("No main function found");
+                }
             }
 
             return self;
