@@ -1,5 +1,6 @@
 pub mod ops {
-    #[allow(non_camel_case_types)] #[derive(Debug, Clone)]
+    #[allow(non_camel_case_types)]
+    #[derive(Debug, Clone)]
     ///
     /// Each Operator added here must be also added in the following places:
     /// op_calls.rs :: the functionality of each op
@@ -126,7 +127,7 @@ pub mod ops {
         EMITW(usize), //emit a word to the output stream
         EMITD(usize), //emits an unknown number of words to the output stream. The number of words is the top value on the stack.
 
-        DJMP, // pop 2 values off stack and read as jump pointer. jump to that location.
+        DJMP,   // pop 2 values off stack and read as jump pointer. jump to that location.
         DJMPe, // pop 2 values off stack, compare. pop 2 values off stack and read as jump pointer. jump if equal
         DJMPne, // pop 2 values off stack, compare, pop 2 values off stack and read as jump pointer., jump if not equal
 
@@ -134,10 +135,9 @@ pub mod ops {
         // DGETSIZE, // pop 2 values off stack, read as alloc pointer. push 1 word onto stack with the size of the allocated memory.
         // DLOADVALUE, // pop 2 values off stack, read as alloc pointer. push each word of the allocated memory onto the stack, followed by 1 word for its size
         // DDEALLOC, // pop 2 values off stack, read as alloc pointer. deallocates the memory.
-
-        LIBLOAD(String), //load a library (omit .stalib extension)
+        LIBLOAD(String),         //load a library (omit .stalib extension)
         DLIBLOAD, //dynamically load a library, pop 1 word, read as number of words, read that many bytes as a string, load library by that string (null bytes at end of decoding are ignored)
-        LIBCALL(String,String), //call a library function
+        LIBCALL(String, String), //call a library function
         DLIBCALL(String), //dynamically call a library function, decode 1 string from stack to get the library name
         LIBDCALL(String), //dynamically call a library function, decode 1 string from stack to get the function name. argument is library name
         DLIBDCALL, //dynamically call a library function, decode 2 strings from stack. first is library name, second is function name.

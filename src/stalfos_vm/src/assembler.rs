@@ -4,7 +4,7 @@ pub mod assembler {
     use std::io::Write;
     use std::mem;
 
-    pub fn assemble(program: &Vec<Operator>,library_ns:String) -> Vec<u8> {
+    pub fn assemble(program: &Vec<Operator>, library_ns: String) -> Vec<u8> {
         let mut val: Vec<u8> = Vec::new();
 
         //deadface bytes are unique to the stalfos vm, marks the binary as for this project
@@ -324,38 +324,45 @@ pub mod assembler {
             /* opcode: 81*/ Operator::DJMPne => {
                 val.push(0x51);
             }
-            /* opcode: 82*/ Operator::DALLOC(v) => {
+            /* opcode: 82*/
+            Operator::DALLOC(v) => {
                 let mut op_bytes: Vec<u8> = vec![0x52];
                 op_bytes.extend_from_slice(&v.to_be_bytes());
 
                 val.extend_from_slice(&op_bytes);
             }
-            /* opcode: 83*/ Operator::LIBLOAD(v2) => {
+            /* opcode: 83*/
+            Operator::LIBLOAD(v2) => {
                 let mut op_bytes: Vec<u8> = vec![0x53];
                 let sbytes = &*str_op_value_bytes(&v2);
                 op_bytes.extend_from_slice(sbytes);
                 val.extend_from_slice(&op_bytes);
             }
-            /* opcode: 84*/ Operator::DLIBLOAD => {
+            /* opcode: 84*/
+            Operator::DLIBLOAD => {
                 val.push(0x54);
             }
-            /* opcode: 85*/ Operator::LIBCALL(v1, v2) => {
+            /* opcode: 85*/
+            Operator::LIBCALL(v1, v2) => {
                 let mut op_bytes: Vec<u8> = vec![0x55];
                 op_bytes.extend_from_slice(&*str_op_value_bytes(&v1));
                 op_bytes.extend_from_slice(&*str_op_value_bytes(&v2));
                 val.extend_from_slice(&op_bytes);
             }
-            /* opcode: 86*/ Operator::DLIBCALL(v1) => {
+            /* opcode: 86*/
+            Operator::DLIBCALL(v1) => {
                 let mut op_bytes = vec![0x56];
                 op_bytes.extend_from_slice(&*str_op_value_bytes(&v1));
                 val.extend_from_slice(&op_bytes);
             }
-            /* opcode: 87*/ Operator::LIBDCALL(v1) => {
+            /* opcode: 87*/
+            Operator::LIBDCALL(v1) => {
                 let mut op_bytes = vec![0x57];
                 op_bytes.extend_from_slice(&*str_op_value_bytes(&v1));
                 val.extend_from_slice(&op_bytes);
             }
-            /* opcode: 88*/ Operator::DLIBDCALL => {
+            /* opcode: 88*/
+            Operator::DLIBDCALL => {
                 val.push(0x58);
             }
         }
@@ -382,14 +389,14 @@ pub mod assembler {
     }
 
     pub fn parse_binary(program_binary: Vec<u8>) -> (Vec<Operator>, String) {
-        let mut namespace:String = "".to_string();
+        let mut namespace: String = "".to_string();
         let mut operations: Vec<Operator> = Vec::new();
         let n_bytes = program_binary.len();
         //check for magic_bytes at start
         let magic_bytes: [u8; 4] = 0xDEADFACE_u32.to_be_bytes();
         let library_bytes: [u8; 4] = 0xDEADC0DE_u32.to_be_bytes();
 
-        let is_library:bool;
+        let is_library: bool;
 
         //check that the file starts with either magic or library bytes
 
@@ -409,7 +416,6 @@ pub mod assembler {
 
         let mut namespace_extracted = false;
 
-
         let mut i = 4;
         for _ in 4..n_bytes - 1 {
             if i >= n_bytes {
@@ -422,23 +428,21 @@ pub mod assembler {
                 // we are going back 1 byte because we aren't extracting it from an OPCODE
                 // usually we have opcode followed by operands,
                 // but this is a namespace string the exists before the first opcode
-                i-=1;
+                i -= 1;
 
                 let (usize_value, bytes_read) = read_next_usize(&program_binary, i);
                 i += bytes_read;
 
-                let (string, bytes_read_2) =
-                    read_next_string(&program_binary, i, usize_value);
+                let (string, bytes_read_2) = read_next_string(&program_binary, i, usize_value);
                 i += bytes_read_2;
 
                 namespace = string.clone();
 
                 //re-add the offset we removed because future OPCODEs will be offset by 1
-                i+=1;
-                namespace_extracted=true;
-                continue
+                i += 1;
+                namespace_extracted = true;
+                continue;
             }
-
 
             match byte {
                 0x01 => {
@@ -800,9 +804,7 @@ pub mod assembler {
                 0x4B => {
                     operations.push(Operator::CMP);
                 }
-                0x4c => {
-                    operations.push(Operator::JMP_SCAN)
-                }
+                0x4c => operations.push(Operator::JMP_SCAN),
                 0x4D => {
                     operations.push(Operator::OR);
                 }
@@ -846,7 +848,7 @@ pub mod assembler {
                     let (string2, bytes_read_22) =
                         read_next_string(&program_binary, i, string_length2);
                     i += bytes_read_22;
-                    operations.push(Operator::LIBCALL(string,string2));
+                    operations.push(Operator::LIBCALL(string, string2));
                 }
                 0x56 => {
                     let (string_length, str_len_read) = read_next_usize(&program_binary, i);
@@ -863,14 +865,14 @@ pub mod assembler {
                     operations.push(Operator::DLIBDCALL);
                 }
                 _ => {
-                    panic!("Unknown opcode: {} at byte {}", byte,i);
+                    panic!("Unknown opcode: {} at byte {}", byte, i);
                 }
             }
 
             i += 1;
         }
 
-        (operations,namespace.to_string())
+        (operations, namespace.to_string())
     }
 
     fn read_next_usize(program_binary: &Vec<u8>, i: usize) -> (usize, usize) {

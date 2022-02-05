@@ -11,9 +11,9 @@ pub mod stalfos {
     use crate::op_calls;
     pub use crate::ops::ops;
     use crate::ops::ops::Operator;
+    use crate::stal_dll::stal_dll::{StalDynamicInvocation, StalDynamicLibrary};
     use std::borrow::{Borrow, BorrowMut};
     use std::collections::{BTreeMap, HashMap};
-    use crate::stal_dll::stal_dll::{StalDynamicInvocation, StalDynamicLibrary};
 
     pub struct VM {
         pub stack: Vec<u32>,
@@ -43,15 +43,13 @@ pub mod stalfos {
         pub signal_overflow: bool,
 
         // libs have no main function and cannot be run individually. Can be loaded and called later.
-        pub is_lib:bool,
+        pub is_lib: bool,
 
         // 16 bytes is sufficient to perform an operation on 2 64bit numbers.
         // essentially this is 2 64bit registers that can be operated on in chunks for
         //smaller operations
         pub registers: [u8; 16],
-
     }
-
 
     impl VM {
         pub fn new() -> VM {
@@ -69,8 +67,8 @@ pub mod stalfos {
                 signal_finished: false,
                 signal_debug: false,
                 signal_overflow: false,
-                is_lib:false,
-                registers: [0; 16]
+                is_lib: false,
+                registers: [0; 16],
             }
         }
 
@@ -100,8 +98,8 @@ pub mod stalfos {
                 signal_finished: false,
                 signal_debug: true,
                 signal_overflow: false,
-                is_lib:false,
-                registers: [0;16]
+                is_lib: false,
+                registers: [0; 16],
             }
         }
 
@@ -145,24 +143,22 @@ pub mod stalfos {
             return self;
         }
 
-
-
-        pub fn run_specific_operation(&mut self, operation_number:usize)->&mut VM{
+        pub fn run_specific_operation(&mut self, operation_number: usize) -> &mut VM {
             // let mut libL:HashMap<String,StalDynamicLibrary> = ;
 
             // let libraries = L.borrow_mut();
 
-            let pc_before:usize = self.program_counter;
+            let pc_before: usize = self.program_counter;
             self.program_counter = operation_number;
-            op_calls::op_calls::execute_operation(self,HashMap::new().borrow_mut());
+            op_calls::op_calls::execute_operation(self, HashMap::new().borrow_mut());
             self.program_counter = pc_before;
             self
         }
 
-        pub fn run_single_operation(&mut self, op:Operator)->&mut VM{
-            let pc_before:usize = self.program_counter;
+        pub fn run_single_operation(&mut self, op: Operator) -> &mut VM {
+            let pc_before: usize = self.program_counter;
             self.program.push(op);
-            self.program_counter = self.program.len()-1;
+            self.program_counter = self.program.len() - 1;
             op_calls::op_calls::execute_operation(self, HashMap::new().borrow_mut());
             self.program.pop();
             self.program_counter = pc_before;
@@ -225,7 +221,6 @@ pub mod stalfos {
                 self.program_counter = self.jmp_table["main"];
                 self.stack_frame_pointers.push((0, self.program_counter))
             } else {
-
                 if !self.is_lib {
                     panic!("No main function found");
                 }
@@ -326,7 +321,12 @@ pub mod stalfos {
             VM::get_string_from_u32_vec(args)
         }
 
-        pub fn call_dynamic_library(&mut self, libraries:&mut HashMap<String, StalDynamicLibrary>, library:String, label:String) {
+        pub fn call_dynamic_library(
+            &mut self,
+            libraries: &mut HashMap<String, StalDynamicLibrary>,
+            library: String,
+            label: String,
+        ) {
             if libraries.contains_key(&*library) {
                 let lib = libraries.get(&*library).unwrap();
                 let mut invocation = StalDynamicInvocation::new(lib.clone());

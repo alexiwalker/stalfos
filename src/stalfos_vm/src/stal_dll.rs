@@ -1,11 +1,11 @@
 pub mod stal_dll {
+    use crate::assembler::assembler::parse_binary;
+    use crate::stalfos::ops::Operator;
+    use crate::stalfos::VM;
     use std::borrow::BorrowMut;
     use std::collections::{BTreeMap, HashMap};
     use std::fs::File;
     use std::io::Read;
-    use crate::assembler::assembler::parse_binary;
-    use crate::stalfos::ops::Operator;
-    use crate::stalfos::VM;
 
     #[derive(Debug, Clone)]
     pub struct StalDynamicLibrary {
@@ -13,7 +13,6 @@ pub mod stal_dll {
         pub operations: Vec<Operator>,
         pub jump_table: HashMap<String, usize>,
     }
-
 
     #[derive(Debug, Clone)]
     pub struct StalDynamicInvocation {
@@ -28,57 +27,52 @@ pub mod stal_dll {
         let mut file = File::open(path).unwrap();
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer).unwrap();
-        let (program,namespace) = parse_binary(buffer);
+        let (program, namespace) = parse_binary(buffer);
 
         let mut jump_table = HashMap::new();
         for (_, op) in program.iter().enumerate() {
             match op {
-                Operator::JMP_DEF(string,ptr) => {
+                Operator::JMP_DEF(string, ptr) => {
                     jump_table.insert(string.clone(), *ptr);
                 }
-                Operator::LABEL(string) =>{
+                Operator::LABEL(string) => {
                     if string == "JT_END" {
                         break;
                     }
                 }
-                _ => {
-
-                }
+                _ => {}
             }
         }
         StalDynamicLibrary {
             namespace: namespace.to_string(),
-            operations:program,
+            operations: program,
             jump_table,
         }
     }
 
-
-    pub fn load_file_as_library(path:&str, as_namespace: &str) -> StalDynamicLibrary {
+    pub fn load_file_as_library(path: &str, as_namespace: &str) -> StalDynamicLibrary {
         let mut file = File::open(path).unwrap();
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer).unwrap();
-        let (program,_) = parse_binary(buffer);
+        let (program, _) = parse_binary(buffer);
 
         let mut jump_table = HashMap::new();
         for (_, op) in program.iter().enumerate() {
             match op {
-                Operator::JMP_DEF(string,ptr) => {
+                Operator::JMP_DEF(string, ptr) => {
                     jump_table.insert(string.clone(), *ptr);
                 }
-                Operator::LABEL(string) =>{
+                Operator::LABEL(string) => {
                     if string == "JT_END" {
                         break;
                     }
                 }
-                _ => {
-
-                }
+                _ => {}
             }
         }
         StalDynamicLibrary {
             namespace: as_namespace.to_string(),
-            operations:program,
+            operations: program,
             jump_table,
         }
     }
@@ -113,10 +107,10 @@ pub mod stal_dll {
         }
 
         fn pack_as_vm(&mut self) -> VM {
-            let mut v =Vec::new();
+            let mut v = Vec::new();
             v.extend_from_slice(self.lib.operations.borrow_mut());
             VM {
-                program:v,
+                program: v,
                 stack: self.stack.clone(),
                 program_counter: 0,
                 memory: self.memory.clone(),
@@ -127,12 +121,17 @@ pub mod stal_dll {
                 stack_frame_pointers: Vec::new(),
                 output: Vec::new(),
                 signal_debug: false,
-                is_lib:true,
-                registers:[0;16]
+                is_lib: true,
+                registers: [0; 16],
             }
         }
 
-        pub fn call_func(&mut self, name: String, arg_stack: Vec<u32>, libs:&mut HashMap<String,StalDynamicLibrary>) -> Vec<u32> {
+        pub fn call_func(
+            &mut self,
+            name: String,
+            arg_stack: Vec<u32>,
+            libs: &mut HashMap<String, StalDynamicLibrary>,
+        ) -> Vec<u32> {
             let mut ret: Vec<u32> = vec![];
 
             let jump_location = *self.lib.jump_table.get(&name).unwrap();
@@ -142,14 +141,14 @@ pub mod stal_dll {
             vm.program_counter = jump_location;
             vm.run_with_libs(libs);
 
-            let allocation_size =vm.stack.pop();
+            let allocation_size = vm.stack.pop();
             if allocation_size != None {
-               //copy last n bytes of stack to ret
-               let mut i = 0;
-               while i < allocation_size.unwrap() {
-                   ret.push(vm.stack.pop().unwrap());
-                   i += 1;
-               };
+                //copy last n bytes of stack to ret
+                let mut i = 0;
+                while i < allocation_size.unwrap() {
+                    ret.push(vm.stack.pop().unwrap());
+                    i += 1;
+                }
 
                 ret.reverse();
                 ret.push(allocation_size.unwrap() as u32);

@@ -1,12 +1,15 @@
 pub mod op_calls {
+    use crate::stal_dll::stal_dll;
+    use crate::stal_dll::stal_dll::StalDynamicLibrary;
     use crate::stalfos::ops::Operator;
     use crate::stalfos::VM;
     use std::borrow::{Borrow, BorrowMut};
     use std::collections::HashMap;
-    use crate::stal_dll::stal_dll;
-    use crate::stal_dll::stal_dll::{StalDynamicLibrary};
 
-    pub fn execute_operation(vm: &mut crate::stalfos::VM, loaded_libs: &mut HashMap<String, StalDynamicLibrary>) -> bool {
+    pub fn execute_operation(
+        vm: &mut crate::stalfos::VM,
+        loaded_libs: &mut HashMap<String, StalDynamicLibrary>,
+    ) -> bool {
         let op = vm.program[vm.program_counter].clone();
         let mut has_changed_ptr = false;
         let mut overflow = false;
@@ -692,7 +695,16 @@ pub mod op_calls {
                 let v2 = vm.stack.pop().unwrap();
                 let _leftbytes = v1.to_be_bytes();
                 let _rightbytes = v2.to_be_bytes();
-                let _bytes = [_leftbytes[0], _leftbytes[1], _leftbytes[2], _leftbytes[3], _rightbytes[0], _rightbytes[1], _rightbytes[2], _rightbytes[3]];
+                let _bytes = [
+                    _leftbytes[0],
+                    _leftbytes[1],
+                    _leftbytes[2],
+                    _leftbytes[3],
+                    _rightbytes[0],
+                    _rightbytes[1],
+                    _rightbytes[2],
+                    _rightbytes[3],
+                ];
                 let ptr = usize::from_be_bytes(_bytes);
                 let before = vm.program_counter;
                 vm.program_counter = ptr;
@@ -708,7 +720,16 @@ pub mod op_calls {
                 let v2 = vm.stack.pop().unwrap();
                 let _leftbytes = v1.to_be_bytes();
                 let _rightbytes = v2.to_be_bytes();
-                let _bytes = [_leftbytes[0], _leftbytes[1], _leftbytes[2], _leftbytes[3], _rightbytes[0], _rightbytes[1], _rightbytes[2], _rightbytes[3]];
+                let _bytes = [
+                    _leftbytes[0],
+                    _leftbytes[1],
+                    _leftbytes[2],
+                    _leftbytes[3],
+                    _rightbytes[0],
+                    _rightbytes[1],
+                    _rightbytes[2],
+                    _rightbytes[3],
+                ];
                 let ptr = usize::from_be_bytes(_bytes);
 
                 if (l - r) == 0 {
@@ -726,7 +747,16 @@ pub mod op_calls {
                 let v2 = vm.stack.pop().unwrap();
                 let _leftbytes = v1.to_be_bytes();
                 let _rightbytes = v2.to_be_bytes();
-                let _bytes = [_leftbytes[0], _leftbytes[1], _leftbytes[2], _leftbytes[3], _rightbytes[0], _rightbytes[1], _rightbytes[2], _rightbytes[3]];
+                let _bytes = [
+                    _leftbytes[0],
+                    _leftbytes[1],
+                    _leftbytes[2],
+                    _leftbytes[3],
+                    _rightbytes[0],
+                    _rightbytes[1],
+                    _rightbytes[2],
+                    _rightbytes[3],
+                ];
                 let ptr = usize::from_be_bytes(_bytes);
                 let cmp = l - r;
                 if cmp != 0 {

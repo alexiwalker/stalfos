@@ -2,7 +2,7 @@ pub mod asm_parser {
     use crate::stalfos::ops::Operator;
     use std::str::FromStr;
 
-    pub fn parse_string(string: String) -> (String,Vec<Operator>) {
+    pub fn parse_string(string: String) -> (String, Vec<Operator>) {
         //read character at a time, creating a new string each time to parse until eol or comment
         let mut current_line = String::new();
         // let mut current_op = Operator::new/();
@@ -25,12 +25,12 @@ pub mod asm_parser {
                     next = string.chars().nth(i).unwrap();
                     if next == '\r'
                         && (string.chars().nth(i + 1).is_some()
-                        && string.chars().nth(i + 1).unwrap() == '\n')
+                            && string.chars().nth(i + 1).unwrap() == '\n')
                     {
                         i += 1;
                     } else if next == '\n'
                         && (string.chars().nth(i + 1).is_some()
-                        && string.chars().nth(i + 1).unwrap() == '\r')
+                            && string.chars().nth(i + 1).unwrap() == '\r')
                     {
                         i += 1;
                     }
@@ -48,12 +48,12 @@ pub mod asm_parser {
                 if valid
                     && _next.unwrap() == '\r'
                     && (string.chars().nth(i + 1).is_some()
-                    && string.chars().nth(i + 1).unwrap() == '\n')
+                        && string.chars().nth(i + 1).unwrap() == '\n')
                 {
                     i += 1;
                 } else if next == '\n'
                     && (string.chars().nth(i + 1).is_some()
-                    && string.chars().nth(i + 1).unwrap() == '\r')
+                        && string.chars().nth(i + 1).unwrap() == '\r')
                 {
                     i += 1;
                 }
@@ -100,8 +100,10 @@ pub mod asm_parser {
         let first_line = lines.get(0).unwrap().clone();
         let mut ns_name = "";
         if first_line.starts_with("#<") && first_line.ends_with(">") {
-            ns_declaration=true;
-            ns_name = first_line.split("#<").collect::<Vec<&str>>()[1].split(">").collect::<Vec<&str>>()[0];
+            ns_declaration = true;
+            ns_name = first_line.split("#<").collect::<Vec<&str>>()[1]
+                .split(">")
+                .collect::<Vec<&str>>()[0];
         }
 
         let mut is_first_line = true;
@@ -116,7 +118,7 @@ pub mod asm_parser {
             ops.push(get_operation_from_line(line));
         }
 
-        return (ns_name.to_string(),ops);
+        return (ns_name.to_string(), ops);
     }
 
     fn get_operation_from_line(line: String) -> Operator {
@@ -349,18 +351,14 @@ pub mod asm_parser {
             "LIBCALL" => {
                 return Operator::LIBCALL(
                     clean_string(segments.get(1).unwrap().clone()),
-                    clean_string(segments.get(2).unwrap().clone())
+                    clean_string(segments.get(2).unwrap().clone()),
                 );
             }
             "DLIBCALL" => {
-                return Operator::DLIBCALL(
-                    clean_string(segments.get(1).unwrap().clone()),
-                );
+                return Operator::DLIBCALL(clean_string(segments.get(1).unwrap().clone()));
             }
             "LIBDCALL" => {
-                return Operator::LIBDCALL(
-                    clean_string(segments.get(1).unwrap().clone()),
-                );
+                return Operator::LIBDCALL(clean_string(segments.get(1).unwrap().clone()));
             }
             "DLIBDCALL" => {
                 return Operator::DLIBDCALL;
