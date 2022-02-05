@@ -127,7 +127,8 @@ pub mod stal_dll {
                 stack_frame_pointers: Vec::new(),
                 output: Vec::new(),
                 signal_debug: false,
-                is_lib:true
+                is_lib:true,
+                registers:[0;16]
             }
         }
 

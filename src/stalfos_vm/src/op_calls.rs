@@ -4,26 +4,15 @@ pub mod op_calls {
     use std::borrow::{Borrow, BorrowMut};
     use std::collections::HashMap;
     use crate::stal_dll::stal_dll;
-    use crate::stal_dll::stal_dll::{StalDynamicInvocation, StalDynamicLibrary};
+    use crate::stal_dll::stal_dll::{StalDynamicLibrary};
 
-    pub fn execute_operation(vm: &mut crate::stalfos::VM, loaded_libs:&mut HashMap<String,StalDynamicLibrary>) -> bool {
-
-
-
-        //
-        // if !loaded_libs.contains_key("dyn_helloworld") {
-        //     let path = r"pathhere";
-        //     let lib = stal_dll::load_file_as_library(path,"mynamespace");
-        //     loaded_libs.insert("dyn_helloworld".to_string(), lib);
-        // };
-
-
-        let op = vm.program[vm.program_counter].borrow_mut();
+    pub fn execute_operation(vm: &mut crate::stalfos::VM, loaded_libs: &mut HashMap<String, StalDynamicLibrary>) -> bool {
+        let op = vm.program[vm.program_counter].clone();
         let mut has_changed_ptr = false;
         let mut overflow = false;
         match op {
             Operator::PUSH(v) => {
-                vm.stack.push(*v);
+                vm.stack.push(v);
             }
             // LOAD only gets the first word (4bytes) of the allocation
             // this means it is only suitable for small allocations
@@ -65,7 +54,7 @@ pub mod op_calls {
                             let (next_stack_location, _) = vm.alloc_table[&next_pointer];
                             if stack_location + s as usize + (size as usize) < next_stack_location {
                                 let allocation = (stack_location, s + size);
-                                let p = *identifier;
+                                let p = identifier;
                                 vm.alloc_table.insert(p, allocation);
                                 allocated_memory_location = p;
                                 _s = true;
@@ -77,7 +66,7 @@ pub mod op_calls {
                     if !_s {
                         let end_of_stack = vm.memory.len();
                         let allocation = (end_of_stack, size);
-                        vm.alloc_table.insert(*identifier, allocation);
+                        vm.alloc_table.insert(identifier, allocation);
                         for _ in 0..size {
                             vm.memory.push(0);
                         }
@@ -85,11 +74,11 @@ pub mod op_calls {
                         allocated_memory_location = end_of_stack
                     }
                 }
-                vm.memory[allocated_memory_location] = *value_to_store;
+                vm.memory[allocated_memory_location] = value_to_store;
             }
             Operator::CONST_F(ptr, v) => {
-                let v = *v as u32;
-                vm.alloc_table.insert(*ptr, (vm.memory.len(), v));
+                let v = v as u32;
+                vm.alloc_table.insert(ptr, (vm.memory.len(), v));
                 vm.memory.push(v as u32);
             }
             Operator::CONST_S(ptr, string) => {
@@ -140,7 +129,7 @@ pub mod op_calls {
                             let (next_stack_location, _) = vm.alloc_table[&next_pointer];
                             if stack_location + s as usize + (size as usize) < next_stack_location {
                                 let allocation = (stack_location, s + size);
-                                let p = *ptr;
+                                let p = ptr;
                                 vm.alloc_table.insert(p, allocation);
                                 allocated_memory_location = p;
                                 _s = true;
@@ -152,7 +141,7 @@ pub mod op_calls {
                     if !_s {
                         let end_of_stack = vm.memory.len();
                         let allocation = (end_of_stack, size);
-                        vm.alloc_table.insert(*ptr, allocation);
+                        vm.alloc_table.insert(ptr, allocation);
                         for _ in 0..size {
                             vm.memory.push(0);
                         }
@@ -166,13 +155,13 @@ pub mod op_calls {
                 }
             }
             Operator::CONST_I(ptr, v) => {
-                let v = *v as u32;
-                vm.alloc_table.insert(*ptr, (vm.memory.len(), v));
+                let v = v as u32;
+                vm.alloc_table.insert(ptr, (vm.memory.len(), v));
                 vm.memory.push(v);
             }
             Operator::CONST_B(ptr, v) => {
-                let val = if *v { 1 } else { 0 };
-                vm.alloc_table.insert(*ptr, (vm.memory.len(), val));
+                let val = if v { 1 } else { 0 };
+                vm.alloc_table.insert(ptr, (vm.memory.len(), val));
                 vm.memory.push(val);
             }
             Operator::LOAD_CONST(ptr) => {
@@ -205,25 +194,25 @@ pub mod op_calls {
                         let v = vm.alloc_table[&sptr];
                         let (stack_location, s) = v;
                         let (next_stack_location, _) = vm.alloc_table[&next];
-                        if stack_location + s as usize + (*size as usize) < next_stack_location {
-                            let allocation = (stack_location, s + *size);
-                            let p = *ptr;
+                        if stack_location + s as usize + (size as usize) < next_stack_location {
+                            let allocation = (stack_location, s + size);
+                            let p = ptr;
                             vm.alloc_table.insert(p, allocation);
                         }
                     }
                 }
 
                 let p = vm.memory.len();
-                let allocation = (p, *size);
-                vm.alloc_table.insert(*ptr, allocation);
-                for _ in 0..*size {
+                let allocation = (p, size);
+                vm.alloc_table.insert(ptr, allocation);
+                for _ in 0..size {
                     vm.memory.push(0);
                 }
             }
             Operator::POPS(ptr) => {
                 //pop and store
                 let v = vm.stack.pop().unwrap();
-                vm.alloc_table.insert(*ptr, (vm.memory.len(), v));
+                vm.alloc_table.insert(ptr, (vm.memory.len(), v));
                 vm.memory.push(v);
             }
             Operator::ADDf => {
@@ -372,7 +361,7 @@ pub mod op_calls {
                 let last_op = vm.stack.pop().unwrap();
                 if last_op == 0 {
                     // true is 0 because it is a compare by subtraction: if equal, result is 0
-                    let ptr = vm.jmp_table.get(location).unwrap();
+                    let ptr = vm.jmp_table.get(&*location).unwrap();
                     let before = vm.program_counter;
                     vm.program_counter = *ptr;
 
@@ -384,7 +373,7 @@ pub mod op_calls {
                 let last_op = vm.stack.pop().unwrap();
                 if last_op != 0 {
                     // false is non-0 because it is a compare by subtraction: if equal, result is 0, else false
-                    let ptr = vm.jmp_table.get(location).unwrap();
+                    let ptr = vm.jmp_table.get(&*location).unwrap();
                     let before = vm.program_counter;
 
                     vm.program_counter = *ptr;
@@ -395,11 +384,11 @@ pub mod op_calls {
             }
             Operator::SYSCALL(syscall_id, n_args) => {
                 let mut args = Vec::new();
-                for _ in 0..*n_args {
+                for _ in 0..n_args {
                     args.push(vm.stack.pop().unwrap());
                 }
                 args.reverse();
-                let program_continue = VM::syscall(*syscall_id, args);
+                let program_continue = VM::syscall(syscall_id, args);
 
                 vm.signal_finished = !program_continue;
             }
@@ -466,7 +455,7 @@ pub mod op_calls {
                 //jump defs require extra handling
             }
             Operator::JMP(location) => {
-                let ptr = vm.jmp_table.get(location).unwrap();
+                let ptr = vm.jmp_table.get(&*location).unwrap();
                 let before = vm.program_counter;
 
                 vm.program_counter = *ptr;
@@ -492,9 +481,9 @@ pub mod op_calls {
                 let last_op = vm.stack.pop().unwrap();
 
                 let ptr = if last_op == 0 {
-                    vm.jmp_table.get(_true).unwrap()
+                    vm.jmp_table.get(&*_true).unwrap()
                 } else {
-                    vm.jmp_table.get(_false).unwrap()
+                    vm.jmp_table.get(&*_false).unwrap()
                 };
                 let before = vm.program_counter;
                 vm.program_counter = *ptr;
@@ -528,37 +517,37 @@ pub mod op_calls {
                     buffer.extend(bytes);
                 }
 
-                if offset >= &mut buffer.len() {
+                if offset >= buffer.len() {
                     panic!("offset out of bounds");
                 }
-                let v = buffer.get(*offset as usize).unwrap();
+                let v = buffer.get(offset as usize).unwrap();
 
                 vm.stack.push(*v as u32);
             }
             Operator::GETWORD(ptr, offset) => {
                 let v = vm.alloc_table.get(&ptr).unwrap();
                 let (stack_location, _size) = v;
-                let loc = (*stack_location) + (*offset);
+                let loc = (*stack_location) + (offset);
                 let word = vm.memory[loc];
                 vm.stack.push(word);
             }
             Operator::SETBYTE(ptr, offset, value) => {
                 let v = vm.alloc_table.get(&ptr).unwrap();
                 let (stack_location, _size) = v;
-                let chunk = (*offset) / 4;
-                let offset = (*offset) % 4;
-                let loc = (*stack_location) + (chunk);
+                let chunk = (offset) / 4;
+                let offset = (offset) % 4;
+                let loc = (stack_location) + (chunk);
                 let word = vm.memory[loc];
                 let mut bytes = u_to_bytes(word);
-                bytes[offset] = *value as u8;
+                bytes[offset] = value as u8;
                 let new_word = bytes_to_u(bytes);
                 vm.memory[loc] = new_word;
             }
             Operator::SETWORD(ptr, offset, value) => {
                 let v = vm.alloc_table.get(&ptr).unwrap();
                 let (stack_location, _size) = v;
-                let loc = (*stack_location) + (*offset);
-                vm.memory[loc] = *value;
+                let loc = (stack_location) + (offset);
+                vm.memory[loc] = value;
             }
             Operator::JMP_SCAN => {
                 //noop, this is run during prepare()
@@ -628,7 +617,7 @@ pub mod op_calls {
             }
             Operator::JMPo(location) => {
                 if vm.signal_overflow {
-                    let ptr = vm.jmp_table.get(location).unwrap();
+                    let ptr = vm.jmp_table.get(&*location).unwrap();
                     let before = vm.program_counter;
 
                     vm.program_counter = *ptr;
@@ -644,7 +633,7 @@ pub mod op_calls {
                     args.push(vm.stack.pop().unwrap());
                 }
                 args.reverse();
-                let program_continue = VM::syscall(*syscall_id, args);
+                let program_continue = VM::syscall(syscall_id, args);
 
                 vm.signal_finished = !program_continue;
             }
@@ -678,7 +667,7 @@ pub mod op_calls {
                 vm.stack.push(v);
             }
             Operator::DUPO(offset) => {
-                let v = vm.stack[vm.stack.len() - *offset].clone();
+                let v = vm.stack[vm.stack.len() - offset].clone();
                 vm.stack.push(v);
             }
             Operator::SWAP => {
@@ -722,7 +711,7 @@ pub mod op_calls {
                 let _bytes = [_leftbytes[0], _leftbytes[1], _leftbytes[2], _leftbytes[3], _rightbytes[0], _rightbytes[1], _rightbytes[2], _rightbytes[3]];
                 let ptr = usize::from_be_bytes(_bytes);
 
-                if (l-r) ==0 {
+                if (l - r) == 0 {
                     let before = vm.program_counter;
                     vm.program_counter = ptr;
 
@@ -739,7 +728,7 @@ pub mod op_calls {
                 let _rightbytes = v2.to_be_bytes();
                 let _bytes = [_leftbytes[0], _leftbytes[1], _leftbytes[2], _leftbytes[3], _rightbytes[0], _rightbytes[1], _rightbytes[2], _rightbytes[3]];
                 let ptr = usize::from_be_bytes(_bytes);
-                let cmp = l-r;
+                let cmp = l - r;
                 if cmp != 0 {
                     let before = vm.program_counter;
                     vm.program_counter = ptr;
@@ -768,7 +757,7 @@ pub mod op_calls {
                             let (next_stack_location, _) = vm.alloc_table[&next_pointer];
                             if stack_location + s as usize + (size as usize) < next_stack_location {
                                 let allocation = (stack_location, s + size);
-                                let p = *identifier;
+                                let p = identifier;
                                 vm.alloc_table.insert(p, allocation);
                                 allocated_memory_location = p;
                                 _s = true;
@@ -780,7 +769,7 @@ pub mod op_calls {
                     if !_s {
                         let end_of_stack = vm.memory.len();
                         let allocation = (end_of_stack, size);
-                        vm.alloc_table.insert(*identifier, allocation);
+                        vm.alloc_table.insert(identifier, allocation);
                         for _ in 0..size {
                             vm.memory.push(0);
                         }
@@ -790,36 +779,38 @@ pub mod op_calls {
                 }
 
                 for i in 0..size {
-                    vm.memory[allocated_memory_location+i as usize] = 0;
+                    vm.memory[allocated_memory_location + i as usize] = 0;
                 }
             }
             Operator::LIBLOAD(library) => {
                 if !loaded_libs.contains_key(&*library.clone()) {
-                    let lib =stal_dll::load_library(library);
+                    let lib = stal_dll::load_library(&*library);
                     loaded_libs.insert(library.clone(), lib);
                 }
             }
-            Operator::DLIBLOAD => {}
-            Operator::LIBCALL(library, label) => {
-                if loaded_libs.contains_key(library) {
-                    let lib = loaded_libs.get(library).unwrap();
-                    let mut invocation = StalDynamicInvocation::new(lib.clone());
-                    let results = invocation.call_func(label.clone(),vm.stack.clone(),loaded_libs);
-                    vm.stack.extend(results);
-                } else {
-                    panic!("Library {} not loaded", library);
+            Operator::DLIBLOAD => {
+                let library = vm.get_next_string();
+                if !loaded_libs.contains_key(&*library.clone()) {
+                    let lib = stal_dll::load_library(&*library);
+                    loaded_libs.insert(library.clone(), lib);
                 }
             }
+            Operator::LIBCALL(library, label) => {
+                vm.call_dynamic_library(loaded_libs, library, label)
+            }
             Operator::DLIBCALL(label) => {
-                println!("attempting to call {} but NYI", label);
-                //todo pop size, pop and decode string
-                //load dynamic library, call string label inside library
+                let library = vm.get_next_string();
+                vm.call_dynamic_library(loaded_libs, library, label)
             }
-            Operator::LIBDCALL(_library) => {
-                //todo pop size, pop and decode string
-                //load library, call dynamic string inside library
+            Operator::LIBDCALL(library) => {
+                let label = vm.get_next_string();
+                vm.call_dynamic_library(loaded_libs, library, label)
             }
-            Operator::DLIBDCALL => {}
+            Operator::DLIBDCALL => {
+                let library = vm.get_next_string();
+                let label = vm.get_next_string();
+                vm.call_dynamic_library(loaded_libs, library, label)
+            }
         }
 
         vm.signal_overflow = overflow;

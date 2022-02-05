@@ -13,7 +13,7 @@ pub mod stalfos {
     use crate::ops::ops::Operator;
     use std::borrow::{Borrow, BorrowMut};
     use std::collections::{BTreeMap, HashMap};
-    use crate::stal_dll::stal_dll::StalDynamicLibrary;
+    use crate::stal_dll::stal_dll::{StalDynamicInvocation, StalDynamicLibrary};
 
     pub struct VM {
         pub stack: Vec<u32>,
@@ -23,15 +23,32 @@ pub mod stalfos {
 
         //<preset pointer, (location, size)>
         pub alloc_table: BTreeMap<usize, (usize, u32)>,
+
+        // label, address
         pub jmp_table: HashMap<String, usize>,
+
+        // from, to
         pub stack_frame_pointers: Vec<(usize, usize)>,
+
+        // output words, from EMIT functions
         pub output: Vec<u32>,
 
+        //if set after an operation is called, this will break and exit
         pub signal_finished: bool,
+
+        // controlls if certain operations will execute. Certain debug operations will not execute
         pub signal_debug: bool,
+
+        // if the last arithmetic operation overflowed, this will be set
         pub signal_overflow: bool,
 
+        // libs have no main function and cannot be run individually. Can be loaded and called later.
         pub is_lib:bool,
+
+        // 16 bytes is sufficient to perform an operation on 2 64bit numbers.
+        // essentially this is 2 64bit registers that can be operated on in chunks for
+        //smaller operations
+        pub registers: [u8; 16],
 
     }
 
@@ -53,6 +70,7 @@ pub mod stalfos {
                 signal_debug: false,
                 signal_overflow: false,
                 is_lib:false,
+                registers: [0; 16]
             }
         }
 
@@ -83,6 +101,7 @@ pub mod stalfos {
                 signal_debug: true,
                 signal_overflow: false,
                 is_lib:false,
+                registers: [0;16]
             }
         }
 
@@ -243,7 +262,7 @@ pub mod stalfos {
             return true;
         }
 
-        fn get_string_from_u32_vec(values: Vec<u32>) -> String {
+        pub fn get_string_from_u32_vec(values: Vec<u32>) -> String {
             //convert each u32 into 4 chars
             let mut string = String::new();
             for value in values {
@@ -295,6 +314,27 @@ pub mod stalfos {
 
             return p;
             // }
+        }
+
+        pub fn get_next_string(&mut self) -> String {
+            let n_args = self.stack.pop().unwrap();
+            let mut args = Vec::new();
+            for _ in 0..n_args {
+                args.push(self.stack.pop().unwrap());
+            }
+            args.reverse();
+            VM::get_string_from_u32_vec(args)
+        }
+
+        pub fn call_dynamic_library(&mut self, libraries:&mut HashMap<String, StalDynamicLibrary>, library:String, label:String) {
+            if libraries.contains_key(&*library) {
+                let lib = libraries.get(&*library).unwrap();
+                let mut invocation = StalDynamicInvocation::new(lib.clone());
+                let results = invocation.call_func(label, self.stack.clone(), libraries);
+                self.stack.extend(results);
+            } else {
+                panic!("Library {} not loaded", library);
+            }
         }
     }
 }

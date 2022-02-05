@@ -3,6 +3,12 @@ use stalfos_vm::stalfos;
 use std::fs::File;
 use std::io::Read;
 
+/*
+* Stalfos : Stalfos Virtual Machine
+* Copyright (C) 2022 Alexander Walker
+
+* Usage: stalfos <inputfile.sta>
+*/
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 2 {

@@ -1,0 +1,15 @@
+; comments start with  a semicolon (;) and extend to eol
+; eol is \r \n or \r\n
+#<dyn_helloworld>
+JMP_DEF hello 3
+JMP_DEF mul_accumulate 8
+.JT_END
+.hello
+CONST_S 1 "hello, world!"
+LOADD 1
+SYSCALLD 3
+RET
+.mul_accumulate
+MULi
+MULi
+RET

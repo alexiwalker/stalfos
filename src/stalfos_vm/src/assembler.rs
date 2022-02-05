@@ -419,7 +419,11 @@ pub mod assembler {
             let byte = program_binary[i];
 
             if is_library && !namespace_extracted {
+                // we are going back 1 byte because we aren't extracting it from an OPCODE
+                // usually we have opcode followed by operands,
+                // but this is a namespace string the exists before the first opcode
                 i-=1;
+
                 let (usize_value, bytes_read) = read_next_usize(&program_binary, i);
                 i += bytes_read;
 
@@ -428,6 +432,8 @@ pub mod assembler {
                 i += bytes_read_2;
 
                 namespace = string.clone();
+
+                //re-add the offset we removed because future OPCODEs will be offset by 1
                 i+=1;
                 namespace_extracted=true;
                 continue
