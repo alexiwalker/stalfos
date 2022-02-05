@@ -114,7 +114,7 @@ pub mod stal_dll {
                 stack: self.stack.clone(),
                 program_counter: 0,
                 memory: self.memory.clone(),
-                alloc_table: self.alloc_table.clone(),
+                static_alloc_table: self.alloc_table.clone(),
                 signal_overflow: false,
                 signal_finished: false,
                 jmp_table: self.lib.jump_table.clone(),
@@ -123,6 +123,8 @@ pub mod stal_dll {
                 signal_debug: false,
                 is_lib: true,
                 registers: [0; 16],
+                _128_registers: [0; 16],
+                dynamic_allocations: vec![],
             }
         }
 

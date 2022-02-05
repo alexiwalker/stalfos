@@ -21,13 +21,13 @@ pub mod op_calls {
             // this means it is only suitable for small allocations
             // use LOADD for larger allocations
             Operator::LOAD(ptr) => {
-                let v = vm.alloc_table[&ptr];
+                let v = vm.static_alloc_table[&ptr];
                 let (stack_location, _) = v;
                 let val = vm.memory[stack_location];
                 vm.stack.push(val);
             }
             Operator::LOADD(ptr) => {
-                let v = vm.alloc_table[&ptr];
+                let v = vm.static_alloc_table[&ptr];
                 let (stack_location, size) = v;
                 let size = size as usize;
                 for i in 0..size {
@@ -44,7 +44,7 @@ pub mod op_calls {
             }
             Operator::CONST_F(ptr, v) => {
                 let v = v as u32;
-                vm.alloc_table.insert(ptr, (vm.memory.len(), v));
+                vm.static_alloc_table.insert(ptr, (vm.memory.len(), v));
                 vm.memory.push(v as u32);
             }
             Operator::CONST_S(ptr, string) => {
@@ -83,22 +83,22 @@ pub mod op_calls {
             }
             Operator::CONST_I(ptr, v) => {
                 let v = v as u32;
-                vm.alloc_table.insert(ptr, (vm.memory.len(), v));
+                vm.static_alloc_table.insert(ptr, (vm.memory.len(), v));
                 vm.memory.push(v);
             }
             Operator::CONST_B(ptr, v) => {
                 let val = if v { 1 } else { 0 };
-                vm.alloc_table.insert(ptr, (vm.memory.len(), val));
+                vm.static_alloc_table.insert(ptr, (vm.memory.len(), val));
                 vm.memory.push(val);
             }
             Operator::LOAD_CONST(ptr) => {
-                let v = vm.alloc_table[&ptr];
+                let v = vm.static_alloc_table[&ptr];
                 let (stack_location, _) = v;
                 let val = vm.memory[stack_location];
                 vm.stack.push(val);
             }
             Operator::GETLEN(ptr) => {
-                let v = vm.alloc_table[&ptr];
+                let v = vm.static_alloc_table[&ptr];
                 let (_, s) = v;
                 vm.stack.push(s);
             }
@@ -108,7 +108,7 @@ pub mod op_calls {
             }
             Operator::ALLOC(ptr, size) => {
                 //check for allocation gaps in the stack
-                let table = vm.alloc_table.borrow_mut();
+                let table = vm.static_alloc_table.borrow_mut();
 
                 //get all keys as a vector
                 let keys: Vec<usize> = table.keys().map(|x| *x).collect();
@@ -118,20 +118,20 @@ pub mod op_calls {
                     if x < l {
                         let sptr = keys.get(x).unwrap();
                         let next = keys.get(x + 1).unwrap();
-                        let v = vm.alloc_table[&sptr];
+                        let v = vm.static_alloc_table[&sptr];
                         let (stack_location, s) = v;
-                        let (next_stack_location, _) = vm.alloc_table[&next];
+                        let (next_stack_location, _) = vm.static_alloc_table[&next];
                         if stack_location + s as usize + (size as usize) < next_stack_location {
                             let allocation = (stack_location, s + size);
                             let p = ptr;
-                            vm.alloc_table.insert(p, allocation);
+                            vm.static_alloc_table.insert(p, allocation);
                         }
                     }
                 }
 
                 let p = vm.memory.len();
                 let allocation = (p, size);
-                vm.alloc_table.insert(ptr, allocation);
+                vm.static_alloc_table.insert(ptr, allocation);
                 for _ in 0..size {
                     vm.memory.push(0);
                 }
@@ -139,7 +139,7 @@ pub mod op_calls {
             Operator::POPS(ptr) => {
                 //pop and store
                 let v = vm.stack.pop().unwrap();
-                vm.alloc_table.insert(ptr, (vm.memory.len(), v));
+                vm.static_alloc_table.insert(ptr, (vm.memory.len(), v));
                 vm.memory.push(v);
             }
             Operator::ADDf => {
@@ -366,14 +366,14 @@ pub mod op_calls {
             }
 
             Operator::DEALLOC(ptr) => {
-                let v = vm.alloc_table[&ptr];
+                let v = vm.static_alloc_table[&ptr];
                 let (stack_location, size) = v;
                 //zero out the memory at the location
                 for i in stack_location..(stack_location + (size as usize)) {
                     vm.memory[i] = 0;
                 }
 
-                vm.alloc_table.remove(&ptr);
+                vm.static_alloc_table.remove(&ptr);
             }
             Operator::JMP_DEF(_, _) => {
                 panic!("JMP_DEF found after other instructions");
@@ -418,7 +418,7 @@ pub mod op_calls {
                 vm.stack_frame_pointers.push((before, vm.program_counter));
             }
             Operator::GETBYTELEN(ptr) => {
-                let v = vm.alloc_table.get(&ptr).unwrap();
+                let v = vm.static_alloc_table.get(&ptr).unwrap();
                 let (stack_location, size) = v;
                 let mut unbuffered_count = (*size) * 4;
                 let ptr = (*stack_location) + (*size as usize);
@@ -434,7 +434,7 @@ pub mod op_calls {
                 vm.stack.push(unbuffered_count);
             }
             Operator::GETBYTE(ptr, offset) => {
-                let v = vm.alloc_table.get(&ptr).unwrap();
+                let v = vm.static_alloc_table.get(&ptr).unwrap();
                 let (stack_location, size) = v;
                 let mut buffer: Vec<u8> = vec![];
 
@@ -452,14 +452,14 @@ pub mod op_calls {
                 vm.stack.push(*v as u32);
             }
             Operator::GETWORD(ptr, offset) => {
-                let v = vm.alloc_table.get(&ptr).unwrap();
+                let v = vm.static_alloc_table.get(&ptr).unwrap();
                 let (stack_location, _size) = v;
                 let loc = (*stack_location) + (offset);
                 let word = vm.memory[loc];
                 vm.stack.push(word);
             }
             Operator::SETBYTE(ptr, offset, value) => {
-                let v = vm.alloc_table.get(&ptr).unwrap();
+                let v = vm.static_alloc_table.get(&ptr).unwrap();
                 let (stack_location, _size) = v;
                 let chunk = (offset) / 4;
                 let offset = (offset) % 4;
@@ -471,7 +471,7 @@ pub mod op_calls {
                 vm.memory[loc] = new_word;
             }
             Operator::SETWORD(ptr, offset, value) => {
-                let v = vm.alloc_table.get(&ptr).unwrap();
+                let v = vm.static_alloc_table.get(&ptr).unwrap();
                 let (stack_location, _size) = v;
                 let loc = (stack_location) + (offset);
                 vm.memory[loc] = value;
@@ -573,13 +573,13 @@ pub mod op_calls {
                 //will do in the future
             }
             Operator::EMITW(ptr) => {
-                let v = vm.alloc_table[&ptr];
+                let v = vm.static_alloc_table[&ptr];
                 let (stack_location, _) = v;
                 let val = vm.memory[stack_location];
                 vm.output.push(val);
             }
             Operator::EMITD(ptr) => {
-                let v = vm.alloc_table[&ptr];
+                let v = vm.static_alloc_table[&ptr];
                 let (stack_location, size) = v;
                 let size = size as usize;
                 for i in 0..size {
@@ -696,7 +696,7 @@ pub mod op_calls {
                 let mut allocated_memory_location = 0;
                 {
                     let mut _s = false;
-                    let table = vm.alloc_table.borrow_mut();
+                    let table = vm.static_alloc_table.borrow_mut();
 
                     //get all keys as a vector
                     let keys: Vec<usize> = table.keys().map(|x| *x).collect();
@@ -706,13 +706,13 @@ pub mod op_calls {
                         if x < l {
                             let current_pointer = keys.get(x).unwrap();
                             let next_pointer = keys.get(x + 1).unwrap();
-                            let v = vm.alloc_table[&current_pointer];
+                            let v = vm.static_alloc_table[&current_pointer];
                             let (stack_location, s) = v;
-                            let (next_stack_location, _) = vm.alloc_table[&next_pointer];
+                            let (next_stack_location, _) = vm.static_alloc_table[&next_pointer];
                             if stack_location + s as usize + (size as usize) < next_stack_location {
                                 let allocation = (stack_location, s + size);
                                 let p = identifier;
-                                vm.alloc_table.insert(p, allocation);
+                                vm.static_alloc_table.insert(p, allocation);
                                 allocated_memory_location = p;
                                 _s = true;
                                 break;
@@ -723,7 +723,7 @@ pub mod op_calls {
                     if !_s {
                         let end_of_stack = vm.memory.len();
                         let allocation = (end_of_stack, size);
-                        vm.alloc_table.insert(identifier, allocation);
+                        vm.static_alloc_table.insert(identifier, allocation);
                         for _ in 0..size {
                             vm.memory.push(0);
                         }

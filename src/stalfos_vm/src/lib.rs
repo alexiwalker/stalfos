@@ -22,8 +22,8 @@ pub mod stalfos {
         pub program: Vec<ops::Operator>,
 
         //<preset pointer, (location, size)>
-        pub alloc_table: BTreeMap<usize, (usize, u32)>,
-
+        pub static_alloc_table: BTreeMap<usize, (usize, u32)>,
+        pub dynamic_allocations:Vec<(usize,u32)>,
         // label, address
         pub jmp_table: HashMap<String, usize>,
 
@@ -49,6 +49,9 @@ pub mod stalfos {
         // essentially this is 2 64bit registers that can be operated on in chunks for
         //smaller operations
         pub registers: [u8; 16],
+
+        // 128but op registers: used to perform a 128bit operation. vm.registers form one 128 bit number (8*16) and vm._128bit_registers form the other
+        pub _128_registers: [u8; 16],
     }
 
     impl VM {
@@ -61,7 +64,7 @@ pub mod stalfos {
                 output: vec![],
 
                 //dict that maps a preset value to a memory address
-                alloc_table: BTreeMap::new(),
+                static_alloc_table: BTreeMap::new(),
                 program: vec![],
                 program_counter: 0,
                 signal_finished: false,
@@ -69,6 +72,8 @@ pub mod stalfos {
                 signal_overflow: false,
                 is_lib: false,
                 registers: [0; 16],
+                _128_registers: [0; 16],
+                dynamic_allocations: vec![],
             }
         }
 
@@ -92,7 +97,7 @@ pub mod stalfos {
                 stack_frame_pointers: vec![],
                 output: vec![],
                 //dict that maps a preset value to a memory address
-                alloc_table: BTreeMap::new(),
+                static_alloc_table: BTreeMap::new(),
                 program: vec![],
                 program_counter: 0,
                 signal_finished: false,
@@ -100,6 +105,8 @@ pub mod stalfos {
                 signal_overflow: false,
                 is_lib: false,
                 registers: [0; 16],
+                _128_registers: [0; 16],
+                dynamic_allocations: vec![],
             }
         }
 
@@ -276,47 +283,86 @@ pub mod stalfos {
             return string;
         }
 
-        pub fn allocate(&mut self, ptr: usize, size:u32) -> usize {
-            // fn _alloc(vm: &mut VM, ptr: &mut usize, size: &mut u32) -> usize {
-                let mut _s = false;
-                let table = self.alloc_table.borrow_mut();
 
-                //get all keys as a vector
-                let keys: Vec<usize> = table.keys().map(|x| *x).collect();
-                let l = keys.len();
-                for x in 0..l {
-                    let current_pointer = keys.get(x).unwrap();
-                    let opt_next_pointer = keys.get(x + 1);
-                    let has_next = opt_next_pointer.is_some();
-                    // if the current key is not the final one in the allocations, check if the required size fits between current+len and next
-                    if x < l && has_next {
-                        let next_pointer = keys.get(x + 1).unwrap();
-                        let v = self.alloc_table[&current_pointer];
-                        let (stack_location, s) = v;
-                        let (next_stack_location, _) = self.alloc_table[&next_pointer];
-                        if stack_location + s as usize + (size as usize)  < next_stack_location {
-                            let allocation = (stack_location, s + size);
-                            let p = ptr;
-                            self.alloc_table.insert(p, allocation);
-                            return p
-                        }
+        /// Allocates memory for a new variable with a known size and a fixed identifier ptr usize
+        ///
+        /// # Arguments
+        ///
+        /// * `ptr`: a usize that represents the identifier of the variable
+        /// * `size`: the number of words (4 bytes) to allocate
+        ///
+        /// returns: usize : the pointer to the allocated memory in the heap. Indexing the heap with this value+0 -> value+size-1 are valid for this allocation
+        ///
+
+        pub fn allocate(&mut self, ptr: usize, size: u32) -> usize {
+            // fn _alloc(vm: &mut VM, ptr: &mut usize, size: &mut u32) -> usize {
+            let table = self.static_alloc_table.borrow_mut();
+
+            //get all keys as a vector
+            let keys: Vec<usize> = table.keys().map(|x| *x).collect();
+            let l = keys.len();
+            for x in 0..l {
+                let current_pointer = keys.get(x).unwrap();
+                let opt_next_pointer = keys.get(x + 1);
+                let has_next = opt_next_pointer.is_some();
+                // if the current key is not the final one in the allocations, check if the required size fits between current+len and next
+                if x < l && has_next {
+                    let next_pointer = keys.get(x + 1).unwrap();
+                    let v = self.static_alloc_table[&current_pointer];
+                    let (stack_location, s) = v;
+                    let (next_stack_location, _) = self.static_alloc_table[&next_pointer];
+                    if stack_location + s as usize + (size as usize) < next_stack_location {
+                        let allocation = (stack_location, s + size);
+                        self.static_alloc_table.insert(ptr, allocation);
+                        return stack_location;
                     }
                 }
+            }
 
-                if !_s {
-                    let end_of_stack = self.memory.len();
-                    let allocation = (end_of_stack, size);
-                    self.alloc_table.insert(ptr, allocation);
-                    for _ in 0..size {
-                        self.memory.push(0);
+            let end_of_stack = self.memory.len();
+            let allocation = (end_of_stack, size);
+            self.static_alloc_table.insert(ptr, allocation);
+            for _ in 0..size {
+                self.memory.push(0);
+            }
+
+            return end_of_stack;
+
+
+        }
+
+        pub fn dyn_allocate(&mut self, size:u32) -> usize {
+            let table = self.static_alloc_table.borrow_mut();
+            //get all keys as a vector
+            let keys: Vec<usize> = table.keys().map(|x| *x).collect();
+            let l = keys.len();
+            for x in 0..l {
+                let current_pointer = keys.get(x).unwrap();
+                let opt_next_pointer = keys.get(x + 1);
+                let has_next = opt_next_pointer.is_some();
+                // if the current key is not the final one in the allocations, check if the required size fits between current+len and next
+                if x < l && has_next {
+                    let next_pointer = keys.get(x + 1).unwrap();
+                    let v = self.static_alloc_table[&current_pointer];
+                    let (stack_location, s) = v;
+                    let (next_stack_location, _) = self.static_alloc_table[&next_pointer];
+                    if stack_location + s as usize + (size as usize) < next_stack_location {
+                        let allocation = (stack_location, s + size);
+                        self.dynamic_allocations.push(allocation);
+                        return stack_location;
                     }
+                }
+            }
 
-                    return end_of_stack;
-                };
+            let end_of_stack = self.memory.len();
+            let allocation = (end_of_stack, size);
+            self.dynamic_allocations.push(allocation);
+            for _ in 0..size {
+                self.memory.push(0);
+            }
 
-            panic!("Could not allocate memory");
+            return end_of_stack;
 
-            // }
         }
 
         pub fn get_next_string(&mut self) -> String {
@@ -344,6 +390,5 @@ pub mod stalfos {
                 panic!("Library {} not loaded", library);
             }
         }
-
     }
 }
