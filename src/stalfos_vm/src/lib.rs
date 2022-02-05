@@ -276,38 +276,46 @@ pub mod stalfos {
             return string;
         }
 
-        pub fn allocate(&mut self, ptr: &mut usize, size: &mut u32) -> usize {
+        pub fn allocate(&mut self, ptr: usize, size:u32) -> usize {
             // fn _alloc(vm: &mut VM, ptr: &mut usize, size: &mut u32) -> usize {
-            let table = self.alloc_table.borrow_mut();
+                let mut _s = false;
+                let table = self.alloc_table.borrow_mut();
 
-            //get all keys as a vector
-            let keys: Vec<usize> = table.keys().map(|x| *x).collect();
-            let l = keys.len();
-            for x in 0..l {
-                // if the current key is not the final one in the allocations, check if the required size fits between current+len and next
-                if x < l {
-                    let sptr = keys.get(x).unwrap();
-                    let next = keys.get(x + 1).unwrap();
-                    let v = self.alloc_table[&sptr];
-                    let (stack_location, s) = v;
-                    let (next_stack_location, _) = self.alloc_table[&next];
-                    if stack_location + s as usize + (*size as usize) < next_stack_location {
-                        let allocation = (stack_location, s + *size);
-                        let p = *ptr;
-                        self.alloc_table.insert(p, allocation);
-                        return p;
+                //get all keys as a vector
+                let keys: Vec<usize> = table.keys().map(|x| *x).collect();
+                let l = keys.len();
+                for x in 0..l {
+                    let current_pointer = keys.get(x).unwrap();
+                    let opt_next_pointer = keys.get(x + 1);
+                    let has_next = opt_next_pointer.is_some();
+                    // if the current key is not the final one in the allocations, check if the required size fits between current+len and next
+                    if x < l && has_next {
+                        let next_pointer = keys.get(x + 1).unwrap();
+                        let v = self.alloc_table[&current_pointer];
+                        let (stack_location, s) = v;
+                        let (next_stack_location, _) = self.alloc_table[&next_pointer];
+                        if stack_location + s as usize + (size as usize)  < next_stack_location {
+                            let allocation = (stack_location, s + size);
+                            let p = ptr;
+                            self.alloc_table.insert(p, allocation);
+                            return p
+                        }
                     }
                 }
-            }
 
-            let p = self.memory.len();
-            let allocation = (p, *size);
-            self.alloc_table.insert(*ptr, allocation);
-            for _ in 0..*size {
-                self.memory.push(0);
-            }
+                if !_s {
+                    let end_of_stack = self.memory.len();
+                    let allocation = (end_of_stack, size);
+                    self.alloc_table.insert(ptr, allocation);
+                    for _ in 0..size {
+                        self.memory.push(0);
+                    }
 
-            return p;
+                    return end_of_stack;
+                };
+
+            panic!("Could not allocate memory");
+
             // }
         }
 
@@ -336,5 +344,6 @@ pub mod stalfos {
                 panic!("Library {} not loaded", library);
             }
         }
+
     }
 }

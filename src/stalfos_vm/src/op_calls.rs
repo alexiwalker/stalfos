@@ -39,44 +39,7 @@ pub mod op_calls {
             }
             Operator::CONST_U(identifier, value_to_store) => {
                 let size = 1;
-                let mut allocated_memory_location = 0;
-                {
-                    let mut _s = false;
-                    let table = vm.alloc_table.borrow_mut();
-
-                    //get all keys as a vector
-                    let keys: Vec<usize> = table.keys().map(|x| *x).collect();
-                    let l = keys.len();
-                    for x in 0..l {
-                        // if the current key is not the final one in the allocations, check if the required size fits between current+len and next
-                        if x < l {
-                            let current_pointer = keys.get(x).unwrap();
-                            let next_pointer = keys.get(x + 1).unwrap();
-                            let v = vm.alloc_table[&current_pointer];
-                            let (stack_location, s) = v;
-                            let (next_stack_location, _) = vm.alloc_table[&next_pointer];
-                            if stack_location + s as usize + (size as usize) < next_stack_location {
-                                let allocation = (stack_location, s + size);
-                                let p = identifier;
-                                vm.alloc_table.insert(p, allocation);
-                                allocated_memory_location = p;
-                                _s = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if !_s {
-                        let end_of_stack = vm.memory.len();
-                        let allocation = (end_of_stack, size);
-                        vm.alloc_table.insert(identifier, allocation);
-                        for _ in 0..size {
-                            vm.memory.push(0);
-                        }
-
-                        allocated_memory_location = end_of_stack
-                    }
-                }
+                let allocated_memory_location = vm.allocate(identifier, size);
                 vm.memory[allocated_memory_location] = value_to_store;
             }
             Operator::CONST_F(ptr, v) => {
@@ -112,46 +75,7 @@ pub mod op_calls {
 
                 let size = string_chunks.len() as u32;
                 //store the chunks in the memory
-                let mut allocated_memory_location = 0;
-                {
-                    let mut _s = false;
-                    let table = vm.alloc_table.borrow_mut();
-
-                    //get all keys as a vector
-                    let keys: Vec<usize> = table.keys().map(|x| *x).collect();
-                    let l = keys.len();
-                    for x in 0..l {
-                        let current_pointer = keys.get(x).unwrap();
-                        let opt_next_pointer = keys.get(x + 1);
-                        let has_next = opt_next_pointer.is_some();
-                        // if the current key is not the final one in the allocations, check if the required size fits between current+len and next
-                        if x < l && has_next {
-                            let next_pointer = keys.get(x + 1).unwrap();
-                            let v = vm.alloc_table[&current_pointer];
-                            let (stack_location, s) = v;
-                            let (next_stack_location, _) = vm.alloc_table[&next_pointer];
-                            if stack_location + s as usize + (size as usize) < next_stack_location {
-                                let allocation = (stack_location, s + size);
-                                let p = ptr;
-                                vm.alloc_table.insert(p, allocation);
-                                allocated_memory_location = p;
-                                _s = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if !_s {
-                        let end_of_stack = vm.memory.len();
-                        let allocation = (end_of_stack, size);
-                        vm.alloc_table.insert(ptr, allocation);
-                        for _ in 0..size {
-                            vm.memory.push(0);
-                        }
-
-                        allocated_memory_location = end_of_stack
-                    }
-                }
+                let allocated_memory_location = vm.allocate(ptr, size);
 
                 for i in 0..string_chunks.len() {
                     vm.memory[allocated_memory_location + i] = string_chunks[i];
