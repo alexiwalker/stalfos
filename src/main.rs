@@ -10,6 +10,7 @@ use std::io::Read;
 * Usage: stalfos <inputfile.sta>
 */
 fn main() {
+    //this is a test to see if i can connect to github
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 2 {
         println!("Usage: stalfos-vm <program>");
