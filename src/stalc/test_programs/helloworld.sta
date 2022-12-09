@@ -3,5 +3,6 @@
 
 JMP_SCAN
 .main
+LIBLOAD "dyn_helloworld"
 LIBCALL "dyn_helloworld" "hello"
 RET

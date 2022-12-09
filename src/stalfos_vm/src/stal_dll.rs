@@ -4,6 +4,7 @@ pub mod stal_dll {
     use crate::stalfos::VM;
     use std::borrow::BorrowMut;
     use std::collections::{BTreeMap, HashMap};
+    use std::env::{current_dir, set_current_dir};
     use std::fs::File;
     use std::io::Read;
 

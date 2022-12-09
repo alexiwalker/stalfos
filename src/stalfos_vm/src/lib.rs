@@ -115,8 +115,9 @@ pub mod stalfos {
         }
 
         pub fn run(&mut self) -> &mut VM {
+            let mut libs = HashMap::new();
             loop {
-                if !op_calls::op_calls::execute_operation(self, HashMap::new().borrow_mut()) {
+                if !op_calls::op_calls::execute_operation(self,libs.borrow_mut()) {
                     self.program_counter += 1;
                 }
 

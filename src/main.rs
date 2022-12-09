@@ -1,3 +1,5 @@
+use std::env::set_current_dir;
+use std::fs;
 use stalfos_vm::assembler::assembler::parse_binary;
 use stalfos_vm::stalfos;
 use std::fs::File;
@@ -19,8 +21,18 @@ fn main() {
 
     let path = args[1].clone();
 
+    let executing_file =  fs::canonicalize(path.clone()).unwrap();
+    let dir =executing_file.parent();
+
+    let dirset=set_current_dir(dir.unwrap());
+    dirset.unwrap();
+
+
+
     let mut file = File::open(path).unwrap();
     let mut buffer = Vec::new();
+
+
     file.read_to_end(&mut buffer).unwrap();
     let (program, _) = parse_binary(buffer);
 

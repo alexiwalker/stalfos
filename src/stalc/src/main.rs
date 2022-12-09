@@ -14,6 +14,7 @@ fn main() {
 
     //get args: first is input, second is output
     let args: Vec<String> = std::env::args().collect();
+
     println!("{:?}", args);
     if args.len() < 3 {
         panic!("Usage: stalfos <input> <output>");
